@@ -7,6 +7,47 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script type="module">
+  // Protege esta página: sin sesión activa, redirige a login.html
+  import { requireAuth, signOut } from './auth.js';
+
+  requireAuth().then(function (session) {
+    if (!session) return; // ya se está redirigiendo a login.html
+
+    var meta = session.user.user_metadata || {};
+    var name = meta.display_name || meta.full_name || meta.name || session.user.email.split('@')[0];
+    var avatarUrl = meta.avatar_url || meta.picture || '';
+    var initial = name.trim().charAt(0).toUpperCase();
+
+    var slot = document.getElementById('topbar-avatar-slot');
+    if (!slot) return;
+
+    var avatarEl;
+    if (avatarUrl) {
+      avatarEl = document.createElement('img');
+      avatarEl.className = 'topbar-avatar';
+      avatarEl.src = avatarUrl;
+      avatarEl.alt = name;
+      avatarEl.referrerPolicy = 'no-referrer';
+      avatarEl.onerror = function () {
+        var fallback = document.createElement('span');
+        fallback.className = 'topbar-avatar';
+        fallback.textContent = initial;
+        fallback.title = name + ' \u00b7 Cerrar sesi\u00f3n';
+        fallback.addEventListener('click', signOut);
+        avatarEl.replaceWith(fallback);
+      };
+    } else {
+      avatarEl = document.createElement('span');
+      avatarEl.className = 'topbar-avatar';
+      avatarEl.textContent = initial;
+    }
+    avatarEl.title = name + ' \u00b7 Cerrar sesi\u00f3n';
+    avatarEl.addEventListener('click', signOut);
+
+    slot.replaceWith(avatarEl);
+  });
+</script>
 <style>
   :root {
     --bg: #0A0714;
@@ -75,6 +116,40 @@
     overflow: hidden;
   }
 
+  /* ---- DESKTOP LAYOUT ----
+     A partir de 900px dejamos de simular una app móvil flotando en el
+     centro de la pantalla: el topbar se convierte en un sidebar fijo a
+     la izquierda y el contenido aprovecha el ancho disponible. */
+  @media (min-width: 900px) {
+    #app {
+      max-width: none;
+      width: 100%;
+      flex-direction: row;
+      align-items: stretch;
+    }
+  }
+
+  #app::before {
+    content: '';
+    position: absolute;
+    top: -180px; left: 50%;
+    width: 700px; height: 480px;
+    transform: translateX(-50%);
+    background:
+      radial-gradient(circle at 30% 30%, rgba(79,255,180,0.14), transparent 60%),
+      radial-gradient(circle at 70% 60%, rgba(201,123,255,0.12), transparent 55%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @media (min-width: 900px) {
+    #app::before {
+      top: -240px; left: 62%;
+      width: 1100px; height: 700px;
+    }
+  }
+
   /* ---- TOP BAR ---- */
   .topbar {
     display: flex;
@@ -90,6 +165,55 @@
     z-index: 10;
   }
 
+  @media (min-width: 900px) {
+    .topbar {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0;
+      width: 240px;
+      flex-shrink: 0;
+      height: 100%;
+      padding: 24px 18px;
+      border-bottom: none;
+      border-right: 1px solid var(--border-soft);
+      position: relative;
+      z-index: 1;
+      background: rgba(19,13,36,0.5);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .topbar .brand {
+      font-size: 16px;
+      padding: 6px 8px 20px;
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: 20px;
+    }
+    .topbar .stats {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      flex: 1;
+      min-height: 0;
+    }
+    .topbar .stat-pill {
+      font-size: 14px;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+    }
+    .topbar .stat-pill .icon { width: 16px; height: 16px; }
+    .topbar #topbar-avatar-slot,
+    .topbar .topbar-avatar {
+      margin-top: auto;
+      align-self: flex-start;
+      width: 36px; height: 36px;
+      font-size: 14px;
+    }
+  }
+
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; letter-spacing: -0.2px; }
   .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
 
@@ -103,14 +227,95 @@
   .stat-pill.xp { color: var(--green); }
   .stat-pill.hearts { color: var(--red); }
 
+  .stat-pill .stat-value { display: inline-block; transition: transform 0.18s ease; }
+  .stat-pill .stat-value.pulse { animation: statPulse 0.4s ease; }
+  @keyframes statPulse {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  .stat-pill.streak .icon.flame-pulse { animation: flamePulse 1.6s ease-in-out infinite; }
+  @keyframes flamePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+
+  .topbar-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    object-fit: cover; flex-shrink: 0;
+    background: var(--green-deep); color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+
   /* ---- SCREENS ---- */
-  .screen { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .screen { display: none; flex: 1; flex-direction: column; min-height: 0; position: relative; z-index: 1; }
   .screen.active { display: flex; }
 
-  /* ---- MAP SCREEN ---- */
-  .map-scroll { flex: 1; padding: 32px 20px 100px; overflow-y: auto; min-height: 0; }
+  @media (min-width: 900px) {
+    .screen { min-width: 0; }
+  }
 
-  .map-header { text-align: center; margin-bottom: 36px; }
+  /* ---- MAP SCREEN ---- */
+  .map-scroll { flex: 1; padding: 32px 20px 100px; overflow-y: auto; min-height: 0; position: relative; }
+
+  @media (min-width: 900px) {
+    .map-scroll {
+      padding: 56px 20px 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .map-header, .path { width: 100%; max-width: 620px; }
+  }
+
+  /* ---- MAP DECORATION ----
+     Formas y glifos flotantes de fondo, puramente ambientales: dan
+     sensación de "mundo" al mapa en vez de un fondo vacío, sin
+     interferir con los clics sobre los nodos. */
+  .map-deco {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .deco-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    opacity: 0.5;
+    animation: decoFloat 9s ease-in-out infinite;
+  }
+  .deco-blob.b1 { width: 10px; height: 10px; background: var(--green); top: 12%; left: 18%; animation-delay: 0s; }
+  .deco-blob.b2 { width: 7px; height: 7px; background: var(--blue); top: 34%; right: 14%; animation-delay: 1.4s; }
+  .deco-blob.b3 { width: 8px; height: 8px; background: var(--purple); bottom: 22%; left: 12%; animation-delay: 2.8s; }
+
+  .deco-glyph {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--border);
+    opacity: 0.45;
+    animation: decoFloat 10s ease-in-out infinite;
+  }
+  .deco-glyph.g1 { font-size: 42px; top: 6%; right: 10%; animation-delay: 0.5s; }
+  .deco-glyph.g2 { font-size: 30px; top: 46%; left: 6%; animation-delay: 2s; }
+  .deco-glyph.g3 { font-size: 34px; bottom: 30%; right: 16%; animation-delay: 3.5s; }
+  .deco-glyph.g4 { font-size: 26px; bottom: 8%; left: 22%; animation-delay: 1s; }
+
+  @keyframes decoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+
+  @media (max-width: 520px) {
+    .deco-glyph.g1, .deco-glyph.g3 { display: none; }
+  }
+
+  .map-header { text-align: center; margin-bottom: 36px; position: relative; z-index: 1; }
   .map-header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
   .map-header p { font-size: 13px; color: var(--text-dim); }
   .reset-progress-btn {
@@ -135,10 +340,36 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: repeating-linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+    background: repeating-linear-gradient(to bottom, var(--border-soft) 0 6px, transparent 6px 12px);
     transform: translateX(-50%);
     z-index: 0;
+    opacity: 0.5;
   }
+
+  /* Conector real entre nodos: SVG dibujado en JS que sigue exactamente
+     el zigzag de cada nodo (ver drawPathConnectors()). El ::before de
+     arriba queda como respaldo centrado mientras el SVG no ha medido
+     el layout todavía (p.ej. durante la primera pintura). */
+  .path-connectors {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .path-connector-line {
+    fill: none;
+    stroke-linecap: round;
+  }
+  /* Tramo superado: además del color de nivel, un flujo de guiones que
+     se desplaza en bucle para sugerir avance activo por el camino. */
+  .path-connector-line.earned {
+    animation: path-flow 1.4s linear infinite;
+  }
+  @keyframes path-flow {
+    to { stroke-dashoffset: -32; }
+  }
+
 
   .level-node {
     position: relative;
@@ -151,6 +382,24 @@
     border: none;
     padding: 14px 0;
     width: 100%;
+    transition: transform 0.15s ease;
+  }
+
+  /* Serpenteo estilo Duolingo: alternamos el nodo a izquierda/derecha del
+     eje central en vez de apilarlos en una lista recta. La conexión
+     punteada queda centrada, así que el desplazamiento es puramente visual. */
+  :root { --zigzag-offset: 72px; }
+  .path .level-node:nth-of-type(odd) { transform: translateX(calc(var(--zigzag-offset) * -1)); }
+  .path .level-node:nth-of-type(even) { transform: translateX(var(--zigzag-offset)); }
+  .path .level-node:nth-of-type(odd):hover { transform: translateX(calc(var(--zigzag-offset) * -1)) translateY(-2px); }
+  .path .level-node:nth-of-type(even):hover { transform: translateX(var(--zigzag-offset)) translateY(-2px); }
+
+  @media (max-width: 380px) {
+    :root { --zigzag-offset: 44px; }
+  }
+
+  @media (min-width: 900px) {
+    :root { --zigzag-offset: 110px; }
   }
 
   .node-shape {
@@ -162,6 +411,8 @@
     justify-content: center;
     font-size: 26px;
     border: 2px solid;
+    position: relative;
+    z-index: 1;
     transition: transform 0.15s ease, box-shadow 0.2s ease;
   }
 
@@ -171,9 +422,57 @@
 
   .node-shape.done { background: var(--green-deep); border-color: var(--green); color: var(--green); }
   .node-shape.active { background: var(--bg-card); border-color: var(--green); color: var(--green); box-shadow: 0 0 0 4px var(--green-deep); }
+  /* Los estados con más peso (completado, activo) llevan relleno tenue en
+     el ícono, como ya hace el corazón, para reforzar su jerarquía visual. */
+  .node-shape.done .icon, .node-shape.active .icon { fill: currentColor; fill-opacity: 0.16; }
   .level-node:hover .node-shape.active { box-shadow: 0 0 0 4px var(--green-deep), 0 0 26px -2px rgba(79,255,180,0.55); }
   .level-node:hover .node-shape.done { box-shadow: 0 0 22px -4px rgba(79,255,180,0.45); }
   .node-shape.locked { background: var(--bg-elevated); border-color: var(--border); color: var(--text-faint); }
+
+  /* Cada nivel usa el color de su tema (definido en el array `levels`) en
+     vez de que todo el camino sea verde: refuerza la sensación de mundos
+     distintos, como en Duolingo. */
+  .node-shape.c-blue.done, .node-shape.c-blue.active { background: var(--blue-deep); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 0 4px var(--blue-deep); }
+  .level-node:hover .node-shape.c-blue.active { box-shadow: 0 0 0 4px var(--blue-deep), 0 0 26px -2px rgba(76,216,255,0.5); }
+  .level-node:hover .node-shape.c-blue.done { box-shadow: 0 0 22px -4px rgba(76,216,255,0.4); }
+
+  .node-shape.c-purple.done, .node-shape.c-purple.active { background: var(--purple-deep); border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px var(--purple-deep); }
+  .level-node:hover .node-shape.c-purple.active { box-shadow: 0 0 0 4px var(--purple-deep), 0 0 26px -2px rgba(201,123,255,0.5); }
+  .level-node:hover .node-shape.c-purple.done { box-shadow: 0 0 22px -4px rgba(201,123,255,0.4); }
+
+  .node-shape.c-orange.done, .node-shape.c-orange.active { background: var(--orange-deep); border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 4px var(--orange-deep); }
+  .level-node:hover .node-shape.c-orange.active { box-shadow: 0 0 0 4px var(--orange-deep), 0 0 26px -2px rgba(255,180,84,0.5); }
+  .level-node:hover .node-shape.c-orange.done { box-shadow: 0 0 22px -4px rgba(255,180,84,0.4); }
+
+  .node-shape.c-red.done, .node-shape.c-red.active { background: var(--red-deep); border-color: var(--red); color: var(--red); box-shadow: 0 0 0 4px var(--red-deep); }
+  .level-node:hover .node-shape.c-red.active { box-shadow: 0 0 0 4px var(--red-deep), 0 0 26px -2px rgba(255,93,122,0.5); }
+  .level-node:hover .node-shape.c-red.done { box-shadow: 0 0 22px -4px rgba(255,93,122,0.4); }
+
+  /* Anillo pulsante detrás del nodo activo: marca visualmente "aquí estás"
+     dentro del camino, como el marcador de posición actual en un mapa.
+     Va como hermano de .node-shape (no dentro) para no quedar recortado
+     por el clip-path hexagonal. */
+  .node-pulse-ring {
+    position: absolute;
+    top: 14px; left: 50%;
+    width: 68px; height: 68px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    border: 2px solid var(--green);
+    opacity: 0;
+    animation: nodePulse 2.2s ease-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .node-pulse-ring.c-blue { border-color: var(--blue); }
+  .node-pulse-ring.c-purple { border-color: var(--purple); }
+  .node-pulse-ring.c-orange { border-color: var(--orange); }
+  .node-pulse-ring.c-red { border-color: var(--red); }
+  @keyframes nodePulse {
+    0% { transform: translateX(-50%) scale(0.85); opacity: 0.5; }
+    75% { transform: translateX(-50%) scale(1.3); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1.3); opacity: 0; }
+  }
 
   .node-label {
     margin-top: 8px;
@@ -184,6 +483,27 @@
     max-width: 90px;
   }
   .node-label.active-label { color: var(--text); }
+
+  /* Gema decorativa entre nodos del camino: pequeño hito visual que se
+     "enciende" cuando ya superaste el nivel anterior. */
+  .path-gem {
+    position: relative;
+    z-index: 1;
+    width: 22px; height: 22px;
+    margin: -2px 0;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+  .path-gem.earned {
+    background: var(--green-deep);
+    border-color: var(--green-dark);
+    color: var(--green);
+  }
+  .path-gem .icon { fill: currentColor; }
 
   .path-cap {
     z-index: 1;
@@ -196,6 +516,16 @@
 
   /* ---- UNIT SCREEN ---- */
   .unit-scroll { flex: 1; padding: 24px 20px 40px; overflow-y: auto; min-height: 0; }
+
+  @media (min-width: 900px) {
+    .unit-scroll {
+      padding: 40px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .back-row, .unit-card, .lesson-list { width: 100%; max-width: 640px; }
+  }
 
   .back-row {
     display: flex; align-items: center; gap: 8px;
@@ -219,7 +549,7 @@
     flex-shrink: 0;
   }
   .unit-card-top h2 { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
-  .unit-card-top p { font-size: 12px; color: var(--text-dim); }
+  .unit-card-top p { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
 
   .progress-track {
     height: 8px; background: var(--bg-elevated); border-radius: 4px; overflow: hidden;
@@ -245,6 +575,19 @@
   .lesson-row.locked { opacity: 0.55; cursor: default; }
   .lesson-row.done { border-color: var(--green-dark); }
   .lesson-row.done .lesson-info h3 { color: var(--green); }
+  /* La siguiente lección recomendada lleva más peso visual que una simple
+     fila "disponible": borde y fondo del número en el color de acento. */
+  .lesson-row.active { border-color: var(--green); box-shadow: 0 0 0 1px var(--green-deep); }
+  .lesson-row.active .lesson-num { background: var(--green-deep); border-color: var(--green); color: var(--green); }
+  .lesson-row.done .lesson-num .icon, .lesson-row.active .lesson-num .icon { fill: currentColor; fill-opacity: 0.16; }
+  .lesson-row.active .lesson-info h3::after {
+    content: 'Siguiente';
+    margin-left: 8px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+    color: var(--green); background: var(--green-deep);
+    border: 1px solid var(--green-dark); border-radius: 20px;
+    padding: 2px 7px; vertical-align: middle;
+  }
 
   .lesson-num {
     width: 34px; height: 34px; border-radius: 9px;
@@ -268,6 +611,13 @@
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-soft);
   }
+
+  @media (min-width: 900px) {
+    .lesson-header, .lesson-breadcrumb, .feedback-bar {
+      padding-left: max(20px, calc((100% - 640px) / 2));
+      padding-right: max(20px, calc((100% - 640px) / 2));
+    }
+  }
   .close-btn {
     background: none; border: none; color: var(--text-dim);
     font-size: 22px; cursor: pointer; line-height: 1; padding: 4px;
@@ -277,6 +627,19 @@
     flex-shrink: 0;
   }
   .close-btn:hover { color: var(--text); background: var(--bg-elevated); }
+
+  .lesson-breadcrumb {
+    padding: 10px 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .lesson-breadcrumb .crumb-current { color: var(--text-dim); }
+
   .lesson-progress-track {
     flex: 1; height: 10px; background: var(--bg-elevated); border-radius: 5px; overflow: hidden;
   }
@@ -287,6 +650,13 @@
     flex: 1; display: flex; flex-direction: column;
     padding: 28px 20px; overflow-y: auto;
     min-height: 0;
+  }
+
+  @media (min-width: 900px) {
+    .lesson-body {
+      padding-left: max(20px, calc((100% - 640px) / 2));
+      padding-right: max(20px, calc((100% - 640px) / 2));
+    }
   }
 
   .exercise-kicker {
@@ -445,6 +815,10 @@
     justify-content: center; padding: 40px 24px; text-align: center;
     overflow-y: auto; min-height: 0;
   }
+
+  @media (min-width: 900px) {
+    .complete-body p { max-width: 420px; }
+  }
   .complete-icon { font-size: 56px; margin-bottom: 18px; }
   .complete-body h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
   .complete-body p { font-size: 14px; color: var(--text-dim); margin-bottom: 32px; }
@@ -505,10 +879,31 @@
   }
   .topic-sheet.show { transform: translate(-50%, 0); }
 
+  /* En desktop el bottom-sheet de móvil se convierte en un modal
+     centrado, ya que "centrado respecto al viewport" ya no coincide
+     con el centro del área de contenido (hay un sidebar a la izquierda). */
+  @media (min-width: 900px) {
+    .topic-sheet {
+      left: 50%; top: 50%; bottom: auto;
+      transform: translate(-50%, calc(-50% + 24px));
+      width: 92%; max-width: 440px;
+      max-height: 82vh;
+      border-radius: 18px;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      transition: transform 0.22s cubic-bezier(.32,.72,0,1), opacity 0.22s ease;
+    }
+    .topic-sheet.show { transform: translate(-50%, -50%); opacity: 1; }
+  }
+
   .sheet-handle {
     width: 36px; height: 4px; border-radius: 2px;
     background: var(--border); margin: 4px auto 14px;
     flex-shrink: 0;
+  }
+
+  @media (min-width: 900px) {
+    .sheet-handle { display: none; }
   }
 
   .sheet-header {
@@ -523,7 +918,7 @@
   }
   .sheet-header-text { flex: 1; min-width: 0; }
   .sheet-header-text h2 { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
-  .sheet-header-text p { font-size: 12px; color: var(--text-dim); }
+  .sheet-header-text p { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
   .sheet-close {
     background: none; border: none; color: var(--text-dim);
     font-size: 24px; cursor: pointer; line-height: 1; padding: 4px; flex-shrink: 0;
@@ -550,6 +945,7 @@
     font-size: 14px; flex-shrink: 0;
   }
   .sheet-lesson-row.done .sheet-lesson-num { background: var(--green-deep); border-color: var(--green); color: var(--green); }
+  .sheet-lesson-row.done .sheet-lesson-num .icon { fill: currentColor; fill-opacity: 0.16; }
   .sheet-lesson-row.done .sheet-lesson-info h3 { color: var(--green); }
   .sheet-lesson-info { flex: 1; min-width: 0; }
   .sheet-lesson-info h3 { font-size: 13.5px; font-weight: 600; margin-bottom: 1px; }
@@ -584,15 +980,25 @@
   <div class="topbar">
     <a class="brand" href="index.html"><span class="dot"></span>LinuxPath</a>
     <div class="stats">
-      <div class="stat-pill streak"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 3-3 4-3 8a3 3 0 006 0c1 1 2 2.5 2 5a7 7 0 11-14 0c0-4 2-6 3-8 1 2 1.5 1 2-1 .5-2 .5-3 4-4z"/></svg> <span id="streak-count">0</span></div>
-      <div class="stat-pill xp"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10"/></svg> <span id="xp-count">0</span></div>
+      <div class="stat-pill streak"><svg class="icon flame-pulse" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 3-3 4-3 8a3 3 0 006 0c1 1 2 2.5 2 5a7 7 0 11-14 0c0-4 2-6 3-8 1 2 1.5 1 2-1 .5-2 .5-3 4-4z"/></svg> <span class="stat-value" id="streak-count">0</span></div>
+      <div class="stat-pill xp"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10"/></svg> <span class="stat-value" id="xp-count">0</span></div>
       <div class="stat-pill hearts"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" style="fill:currentColor" aria-hidden="true"><path d="M12 20s-7-4.5-9.5-9C.7 7.2 2.5 4 6 4c2 0 3.5 1 6 3.5C14.5 5 16 4 18 4c3.5 0 5.3 3.2 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg> <span id="hearts-count">5</span></div>
+      <span id="topbar-avatar-slot"></span>
     </div>
   </div>
 
   <!-- MAP SCREEN -->
   <div class="screen active" id="screen-map">
     <div class="map-scroll">
+      <div class="map-deco" aria-hidden="true">
+        <span class="deco-blob b1"></span>
+        <span class="deco-blob b2"></span>
+        <span class="deco-blob b3"></span>
+        <span class="deco-glyph g1">$</span>
+        <span class="deco-glyph g2">#</span>
+        <span class="deco-glyph g3">~</span>
+        <span class="deco-glyph g4">/</span>
+      </div>
       <div class="map-header">
         <h1>Tu ruta Linux</h1>
         <p>Completa unidades para desbloquear el siguiente nivel</p>
@@ -628,6 +1034,7 @@
       <div class="lesson-progress-track"><div class="lesson-progress-fill" id="lesson-progress-fill" style="width:0%"></div></div>
       <div class="hearts-display" id="lesson-hearts"></div>
     </div>
+    <div class="lesson-breadcrumb" id="lesson-breadcrumb"></div>
     <div class="lesson-body" id="lesson-body"></div>
     <div class="feedback-bar" id="feedback-bar">
       <div class="feedback-top">
@@ -720,6 +1127,7 @@
     signal: '<svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5a11 11 0 0114 0M8.5 16a6 6 0 017 0M12 19.5h.01"/></svg>',
     download: '<svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>',
     crown: '<svg class="icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M4 18l-1-9 5 4 4-7 4 7 5-4-1 9"/></svg>',
+    sparkle: '<svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>',
     heart: '<svg class="icon" width="14" height="14" viewBox="0 0 24 24" style="fill:currentColor" aria-hidden="true"><path d="M12 20s-7-4.5-9.5-9C.7 7.2 2.5 4 6 4c2 0 3.5 1 6 3.5C14.5 5 16 4 18 4c3.5 0 5.3 3.2 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg>',
     heartOutline: '<svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.5-9.5-9C.7 7.2 2.5 4 6 4c2 0 3.5 1 6 3.5C14.5 5 16 4 18 4c3.5 0 5.3 3.2 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg>',
     broom: '<svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4L10 14"/><path d="M4 20l3.5-3.5a3 3 0 014.2 0L13 18"/><path d="M9 15l-5 5"/><path d="M13 5l6 6"/></svg>',
@@ -3202,12 +3610,17 @@
     const container = document.getElementById('path-container');
     container.innerHTML = '';
 
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'path-connectors');
+    svg.setAttribute('aria-hidden', 'true');
+    container.appendChild(svg);
+
     const cap = document.createElement('div');
     cap.className = 'path-cap';
     cap.innerHTML = '<span class="icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M4 18l-1-9 5 4 4-7 4 7 5-4-1 9"/></svg></span><span>Linux Pro</span>';
     container.appendChild(cap);
 
-    [...levels].reverse().forEach(level => {
+    [...levels].reverse().forEach((level, i) => {
       const node = document.createElement('button');
       node.className = 'level-node';
       node.setAttribute('aria-label', level.title + (level.status === 'locked' ? ' (bloqueado)' : ''));
@@ -3215,18 +3628,94 @@
 
       const shapeClass = level.status === 'active' ? 'active' : (level.status === 'done' ? 'done' : 'locked');
       const labelClass = level.status === 'active' ? 'active-label' : '';
+      const colorClass = level.status === 'locked' ? '' : ('c-' + level.color);
 
       node.innerHTML = `
-        <div class="node-shape ${shapeClass}">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div>
+        ${level.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
+        <div class="node-shape ${shapeClass} ${colorClass}">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div>
         <div class="node-label ${labelClass}">${level.title}</div>
       `;
       container.appendChild(node);
+
+      // Checkpoint decorativo entre niveles: una gema que solo se ve
+      // "activada" (con color) si ya superaste el nivel anterior en el
+      // recorrido. Puramente visual, no afecta el progreso real.
+      const isLast = i === levels.length - 1;
+      if (!isLast) {
+        const gem = document.createElement('div');
+        const earned = level.status === 'done';
+        gem.className = 'path-gem' + (earned ? ' earned' : '');
+        gem.setAttribute('aria-hidden', 'true');
+        gem.innerHTML = ICONS.sparkle;
+        container.appendChild(gem);
+      }
     });
 
     const start = document.createElement('div');
     start.className = 'path-cap';
     start.innerHTML = '<span class="icon-wrap">' + ICONS.linux + '</span><span>Comenzar</span>';
     container.appendChild(start);
+
+    // Esperamos al siguiente frame para que el navegador ya haya
+    // calculado el layout (posiciones reales del zigzag) antes de medir.
+    requestAnimationFrame(() => drawPathConnectors(container, svg));
+  }
+
+  // Dibuja el camino real conectando el centro de cada nodo con el
+  // siguiente mediante una curva suave, en vez de una línea de fondo
+  // aproximada. El tramo se pinta en el color del nivel de origen y
+  // queda "encendido" (más sólido) si ese nivel ya está superado.
+  function drawPathConnectors(container, svg) {
+    const rect = container.getBoundingClientRect();
+    svg.setAttribute('width', rect.width);
+    svg.setAttribute('height', rect.height);
+    svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+    svg.innerHTML = '';
+
+    const nodes = Array.from(container.querySelectorAll('.level-node'));
+    const colorVar = { green: '--green', blue: '--blue', purple: '--purple', orange: '--orange', red: '--red' };
+    const orderedLevels = [...levels].reverse();
+
+    const points = nodes.map(node => {
+      const shape = node.querySelector('.node-shape');
+      const r = shape.getBoundingClientRect();
+      return {
+        x: r.left + r.width / 2 - rect.left,
+        y: r.top + r.height / 2 - rect.top
+      };
+    });
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const from = points[i];
+      const to = points[i + 1];
+      const level = orderedLevels[i];
+      const earned = level.status === 'done';
+      const color = earned ? `var(${colorVar[level.color] || '--green'})` : 'var(--border)';
+
+      const midY = (from.y + to.y) / 2;
+      const d = `M ${from.x} ${from.y} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y}`;
+
+      // Halo suave detrás del trazo principal: mismo trayecto, más ancho
+      // y translúcido, solo en tramos ya superados, para dar profundidad.
+      if (earned) {
+        const glow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        glow.setAttribute('d', d);
+        glow.setAttribute('class', 'path-connector-line');
+        glow.setAttribute('stroke', color);
+        glow.setAttribute('stroke-width', '9');
+        glow.setAttribute('opacity', '0.18');
+        svg.appendChild(glow);
+      }
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', 'path-connector-line' + (earned ? ' earned' : ''));
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', earned ? '5' : '4');
+      path.setAttribute('stroke-dasharray', earned ? '10 6' : '2 12');
+      path.setAttribute('opacity', earned ? '0.95' : '0.6');
+      svg.appendChild(path);
+    }
   }
 
   function shakeLocked(el) {
@@ -3358,7 +3847,18 @@
     state.sessionQueue = getBaseExercises().slice();
     updateHeartsDisplay();
     renderExercise();
+    renderLessonBreadcrumb();
     showScreen('screen-lesson');
+  }
+
+  // Muestra "Unidad → Lección N" arriba del ejercicio para no perder
+  // contexto al entrar de golpe a una lección.
+  function renderLessonBreadcrumb() {
+    const el = document.getElementById('lesson-breadcrumb');
+    if (!el) return;
+    const u = unitData[state.currentUnit];
+    const lesson = u.lessons[state.currentLessonIdx];
+    el.innerHTML = `<span>${u.title}</span><span aria-hidden="true">→</span><span class="crumb-current">${lesson.title}</span>`;
   }
 
   function exitLesson() { goToUnit(); }
@@ -3925,9 +4425,20 @@
     }
   }
 
+  // Anima brevemente un stat (XP, racha) al actualizar su valor, para que
+  // ganar puntos se sienta en vez de solo leerse.
+  function pulseStat(el) {
+    el.classList.remove('pulse');
+    // Forzamos reflow para poder re-disparar la animación si ya estaba activa.
+    void el.offsetWidth;
+    el.classList.add('pulse');
+  }
+
   function finishLesson() {
     state.xp += state.exerciseXpEarned;
-    document.getElementById('xp-count').textContent = state.xp;
+    const xpEl = document.getElementById('xp-count');
+    xpEl.textContent = state.xp;
+    pulseStat(xpEl);
     document.getElementById('reward-xp').textContent = '+' + state.exerciseXpEarned;
     document.getElementById('reward-streak').textContent = state.streak;
 
