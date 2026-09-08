@@ -381,18 +381,27 @@
     background: none;
     border: none;
     padding: 14px 0;
-    width: 100%;
+    width: 96px;
+    max-width: 96px;
+    margin: 0 auto;
     transition: transform 0.15s ease;
   }
 
   /* Serpenteo estilo Duolingo: alternamos el nodo a izquierda/derecha del
      eje central en vez de apilarlos en una lista recta. La conexión
-     punteada queda centrada, así que el desplazamiento es puramente visual. */
+     punteada queda centrada, así que el desplazamiento es puramente visual.
+     Usamos data-zigzag (fijado en JS según el índice real del nivel) en
+     vez de :nth-of-type, porque :nth-of-type se desalineaba al mezclarse
+     con los .path-gem/.path-cap intercalados y con el column-reverse del
+     contenedor: el hexágono terminaba pintado desplazado de su verdadera
+     área clicable. Además el botón ahora mide solo el ancho del hexágono
+     (96px) en vez de 100%, así el translateX no deja una franja del
+     ancho del contenedor fuera de sitio. */
   :root { --zigzag-offset: 72px; }
-  .path .level-node:nth-of-type(odd) { transform: translateX(calc(var(--zigzag-offset) * -1)); }
-  .path .level-node:nth-of-type(even) { transform: translateX(var(--zigzag-offset)); }
-  .path .level-node:nth-of-type(odd):hover { transform: translateX(calc(var(--zigzag-offset) * -1)) translateY(-2px); }
-  .path .level-node:nth-of-type(even):hover { transform: translateX(var(--zigzag-offset)) translateY(-2px); }
+  .path .level-node[data-zigzag="left"] { transform: translateX(calc(var(--zigzag-offset) * -1)); }
+  .path .level-node[data-zigzag="right"] { transform: translateX(var(--zigzag-offset)); }
+  .path .level-node[data-zigzag="left"]:hover { transform: translateX(calc(var(--zigzag-offset) * -1)) translateY(-2px); }
+  .path .level-node[data-zigzag="right"]:hover { transform: translateX(var(--zigzag-offset)) translateY(-2px); }
 
   @media (max-width: 380px) {
     :root { --zigzag-offset: 44px; }
@@ -876,12 +885,17 @@
     transition: transform 0.28s cubic-bezier(.32,.72,0,1);
     z-index: 31;
     box-shadow: 0 -12px 40px rgba(0,0,0,0.4);
+    pointer-events: none;
   }
-  .topic-sheet.show { transform: translate(-50%, 0); }
+  .topic-sheet.show { transform: translate(-50%, 0); pointer-events: auto; }
 
   /* En desktop el bottom-sheet de móvil se convierte en un modal
      centrado, ya que "centrado respecto al viewport" ya no coincide
-     con el centro del área de contenido (hay un sidebar a la izquierda). */
+     con el centro del área de contenido (hay un sidebar a la izquierda).
+     Importante: aquí el modal cerrado queda centrado en pantalla (solo
+     con opacity: 0), así que sin pointer-events: none seguiría
+     bloqueando clics sobre cualquier nodo del mapa que quedara debajo
+     de esa zona central, aunque fuera invisible. */
   @media (min-width: 900px) {
     .topic-sheet {
       left: 50%; top: 50%; bottom: auto;
@@ -893,7 +907,7 @@
       opacity: 0;
       transition: transform 0.22s cubic-bezier(.32,.72,0,1), opacity 0.22s ease;
     }
-    .topic-sheet.show { transform: translate(-50%, -50%); opacity: 1; }
+    .topic-sheet.show { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
   }
 
   .sheet-handle {
@@ -3623,6 +3637,11 @@
     [...levels].reverse().forEach((level, i) => {
       const node = document.createElement('button');
       node.className = 'level-node';
+      // data-zigzag se calcula sobre el índice real del nivel (i), no
+      // sobre la posición del <button> entre sus hermanos en el DOM:
+      // eso es lo que antes se desalineaba con :nth-of-type y hacía que
+      // el hexágono se pintara fuera de su verdadera zona de clic.
+      node.setAttribute('data-zigzag', i % 2 === 0 ? 'left' : 'right');
       node.setAttribute('aria-label', level.title + (level.status === 'locked' ? ' (bloqueado)' : ''));
       node.onclick = () => openTopicSheet(level.id);
 
@@ -3776,6 +3795,20 @@
     document.getElementById('topic-sheet').classList.remove('show');
     if (sheetLastFocusedEl && typeof sheetLastFocusedEl.focus === 'function') sheetLastFocusedEl.focus();
   }
+
+  // Red de seguridad: si por cualquier motivo la ficha de lección se
+  // queda "colgada" (visualmente oculta pero con pointer-events activo
+  // sobre el overlay, bloqueando el mapa), cualquier clic dentro de la
+  // página vuelve a forzar el cierre explícitamente antes de procesar
+  // el clic sobre el nodo, en vez de depender únicamente de que el
+  // toque caiga justo sobre el div sheet-overlay.
+  document.addEventListener('pointerdown', (e) => {
+    const overlay = document.getElementById('sheet-overlay');
+    const sheet = document.getElementById('topic-sheet');
+    if (!overlay.classList.contains('show')) return;
+    if (sheet.contains(e.target)) return;
+    closeTopicSheet();
+  }, true);
 
   function sheetCtaAction() {
     const id = sheetLevelId;
