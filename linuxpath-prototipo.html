@@ -487,13 +487,6 @@
     color: var(--green);
   }
 
-  .reset-progress-btn {
-    margin-top: 12px; background: none; border: 1px solid var(--border);
-    color: var(--text-dim); font-size: 11px; padding: 5px 10px; border-radius: 20px;
-    cursor: pointer; font-family: 'Inter', sans-serif;
-  }
-  .reset-progress-btn:hover { color: var(--text); border-color: var(--text-faint); }
-
   .path {
     display: flex;
     flex-direction: column-reverse;
@@ -580,14 +573,24 @@
     :root { --zigzag-offset: 110px; }
   }
 
-  /* ---- Toggle de estilo de ruta (zigzag vs. seguida) ---- */
+  /* ---- Toggle de estilo de ruta (zigzag vs. seguida) ----
+     Ahora vive en el topbar, junto a las stats, en vez de dentro del
+     encabezado del mapa. */
   .path-style-toggle {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-top: 10px;
     font-size: 12px;
     color: var(--text-dim);
+    order: 5;
+  }
+  @media (max-width: 559px) {
+    .path-style-toggle { flex-basis: 100%; justify-content: center; order: 5; }
+  }
+  @media (min-width: 900px) {
+    .path-style-toggle { order: 4; }
+    .topbar #topbar-avatar-slot,
+    .topbar .topbar-avatar { order: 5; }
   }
   .path-style-toggle .toggle-label {
     cursor: pointer;
@@ -1280,6 +1283,13 @@
       <div class="stat-pill xp"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10"/></svg> <span class="stat-value" id="xp-count">0</span></div>
       <div class="stat-pill hearts"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" style="fill:currentColor" aria-hidden="true"><path d="M12 20s-7-4.5-9.5-9C.7 7.2 2.5 4 6 4c2 0 3.5 1 6 3.5C14.5 5 16 4 18 4c3.5 0 5.3 3.2 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg> <span id="hearts-count">5</span></div>
     </div>
+    <div class="path-style-toggle">
+      <span class="toggle-label" id="path-style-label-zigzag" onclick="setPathStyle('zigzag')">Zigzag</span>
+      <button class="path-style-switch" id="path-style-switch" role="switch" aria-checked="false" aria-label="Cambiar estilo de ruta" onclick="togglePathStyle()">
+        <span class="switch-knob"></span>
+      </button>
+      <span class="toggle-label" id="path-style-label-straight" onclick="setPathStyle('straight')">Seguida</span>
+    </div>
     <span id="topbar-avatar-slot"></span>
   </div>
 
@@ -1298,14 +1308,6 @@
       <div class="map-header">
         <h1>Tu ruta Linux</h1>
         <p>Completa unidades para desbloquear el siguiente nivel</p>
-        <div class="path-style-toggle">
-          <span class="toggle-label" id="path-style-label-zigzag" onclick="setPathStyle('zigzag')">Zigzag</span>
-          <button class="path-style-switch" id="path-style-switch" role="switch" aria-checked="false" aria-label="Cambiar estilo de ruta" onclick="togglePathStyle()">
-            <span class="switch-knob"></span>
-          </button>
-          <span class="toggle-label" id="path-style-label-straight" onclick="setPathStyle('straight')">Seguida</span>
-        </div>
-        <button class="reset-progress-btn" onclick="if(confirm('¿Reiniciar todo tu progreso?')) resetProgress();">Reiniciar progreso</button>
       </div>
       <div class="path" id="path-container"></div>
     </div>
@@ -3823,6 +3825,368 @@
     }
   ];
 
+  const propietariosLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Todo archivo tiene un dueño',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ls -l notas.txt', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '-rw-r--r-- 1 user user 120 notas.txt', you: false }
+      ],
+      body: 'En Linux, cada archivo y cada carpeta pertenecen a alguien. Como es un sistema pensado para varias personas a la vez, necesita saber quién es el dueño de cada cosa, para decidir quién puede leerla, modificarla o ejecutarla. Esa información no es opcional: viaja pegada al archivo desde el momento en que se crea.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Tres roles: usuario, grupo y otros',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'usuario (tú)', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', text: 'grupo (tu equipo) / otros (el resto)', you: false }
+      ],
+      body: 'Linux organiza los permisos en tres roles distintos para cada archivo: el "usuario" (el dueño, normalmente quien lo creó), el "grupo" (un conjunto de usuarios que comparten cierto acceso, como un equipo de trabajo) y "otros" (cualquiera más en el sistema, fuera del dueño y su grupo). Cada uno de estos tres roles puede tener permisos distintos sobre el mismo archivo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: '¿Por qué separar usuario, grupo y otros?',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'tú: lees y escribes', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'tu equipo: solo lee · el resto: nada', you: false }
+      ],
+      body: 'Esta separación existe porque no siempre quieres tratar a todos igual. Puede que tú necesites poder editar un archivo, tu equipo de trabajo solo necesite leerlo, y el resto de usuarios del sistema no deba verlo en absoluto. Sin esta división, tendrías que elegir entre "todos pueden todo" o "nadie puede nada" — Linux te da un punto intermedio mucho más útil.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Practica',
+      prompt: 'Escribe ls -l notas.txt y presiona Enter',
+      context: 'ls -l muestra el listado "largo": permisos, dueño, grupo, tamaño y fecha de cada archivo, en vez de solo el nombre.',
+      hint: 'Es el comando para listar archivos, con la opción -l (formato largo), seguido del nombre del archivo.',
+      command: 'ls -l notas.txt',
+      output: '-rw-r--r-- 1 user user 120 notas.txt',
+      successMsg: 'Ahí está: user es el dueño y también el grupo de notas.txt, justo después de los permisos.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Leer la salida',
+      prompt: 'Dueño y grupo, columna por columna',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '-rw-r--r-- 1 ana equipo 120 notas.txt', you: false }
+      ],
+      body: 'En la salida de ls -l, después de los permisos y un número, aparecen dos nombres seguidos: el primero es el usuario dueño del archivo (aquí, "ana"), y el segundo es el grupo al que pertenece (aquí, "equipo"). Estos dos nombres son justamente los que definen quién es "usuario" y quién es "grupo" para ese archivo en particular.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas ls -l y ves: -rw-r--r-- 1 ana equipo 340 informe.txt. ¿Quién es el dueño del archivo?',
+      context: 'El dueño y el grupo aparecen como dos nombres seguidos, justo después del número que sigue a los permisos.',
+      options: ['ana', 'equipo', 'informe.txt'],
+      correctIdx: 0,
+      explain: 'El primer nombre después de los permisos (ana) es siempre el usuario dueño del archivo. El segundo (equipo) es el grupo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Y quiénes son "otros"?',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ana (dueña) · equipo (grupo)', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', text: 'cualquier otra cuenta del sistema', you: false }
+      ],
+      body: '"Otros" no aparece con un nombre en ls -l, porque no hace falta: es, por definición, todo el resto de cuentas del sistema que no son ni el dueño ni pertenecen al grupo del archivo. Es la categoría más amplia y, casi siempre, a la que menos permisos conviene darle.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Un usuario puede estar en varios grupos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'groups', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'user equipo diseño sudo', you: false }
+      ],
+      body: 'Una cuenta de usuario no pertenece a un único grupo: puede formar parte de varios a la vez (por ejemplo, "equipo", "diseño" y "sudo" al mismo tiempo). El comando groups muestra a qué grupos pertenece el usuario actual. Cuando ese usuario crea un archivo, uno de esos grupos (normalmente el principal) queda asignado como grupo del archivo.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Practica',
+      prompt: 'Escribe groups y presiona Enter',
+      context: 'groups muestra todos los grupos a los que pertenece tu usuario, sin argumentos.',
+      hint: 'Es una sola palabra, sin nada más.',
+      command: 'groups',
+      output: 'user equipo diseño',
+      successMsg: 'Así puedes ver de un vistazo todos los equipos a los que perteneces dentro del sistema.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Cuál de estas afirmaciones sobre usuario y grupo es correcta?',
+      context: 'Piensa en cómo se relacionan las cuentas de usuario con los grupos en Linux.',
+      options: [
+        'Un usuario solo puede pertenecer a un grupo a la vez',
+        'Un usuario puede pertenecer a varios grupos al mismo tiempo',
+        'Los grupos y los usuarios son exactamente lo mismo'
+      ],
+      correctIdx: 1,
+      explain: 'Un usuario puede formar parte de varios grupos a la vez; el comando groups los lista todos.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres ver el dueño y el grupo del archivo config.yml. Ordena las piezas.',
+      context: 'Necesitas el listado "largo" de ls, que incluye esa información, seguido del nombre del archivo.',
+      chips: ['cat', 'ls', '-l', 'config.yml', '-a'],
+      correctOrder: ['ls', '-l', 'config.yml'],
+      explain: 'ls -l config.yml muestra el listado largo de ese archivo, incluyendo su dueño y su grupo. -a solo agrega archivos ocultos, no detalles como el dueño.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'Usuario, grupo y otros: lo esencial',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'usuario: el dueño del archivo', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'grupo: un equipo · otros: todo el resto', you: false }
+      ],
+      body: 'Repasemos: cada archivo tiene un usuario dueño y un grupo asociado, visibles con ls -l. Los permisos se definen por separado para tres roles: el usuario, el grupo, y "otros" (el resto del sistema). Un usuario puede pertenecer a varios grupos, y groups te muestra a cuáles perteneces tú. Esta base es la que hace posible todo lo que viene después: permisos rwx, chmod, y cambiar dueños con chown.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Un archivo del sistema pertenece al usuario root y al grupo admins. Tu cuenta no es root ni pertenece a admins. ¿Como qué rol te trata Linux frente a ese archivo?',
+      context: 'Piensa en los tres roles posibles y cuál te queda si no eres el dueño ni perteneces al grupo.',
+      options: ['Usuario', 'Grupo', 'Otros'],
+      correctIdx: 2,
+      explain: 'Si no eres el dueño ni perteneces al grupo del archivo, Linux te trata como "otros" — la categoría más amplia y, normalmente, la más restringida.'
+    }
+  ];
+
+  const permisosLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Tres permisos: leer, escribir, ejecutar',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', text: 'r (leer) · w (escribir) · x (ejecutar)', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'rwxr-xr--', you: false }
+      ],
+      body: 'Ya sabes que cada archivo tiene un usuario, un grupo y "otros". Ahora toca ver qué puede hacer cada uno: existen solo tres permisos posibles. r (read) permite leer el contenido, w (write) permite modificarlo, y x (execute) permite ejecutarlo como programa o script. Estos tres permisos se asignan por separado a cada uno de los tres roles que ya conoces.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'El primer carácter: qué tipo de archivo es',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '- archivo · d carpeta · l enlace', you: false }
+      ],
+      body: 'Antes de leer los permisos en sí, fíjate en el primerísimo carácter de la cadena: no es un permiso, sino el tipo de elemento. Un guion (-) significa un archivo normal, una "d" significa una carpeta (directory), y una "l" significa un enlace simbólico (link), como un acceso directo que apunta a otro archivo. El resto de la cadena, los 9 caracteres siguientes, son los permisos propiamente dichos.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Leer la cadena de permisos en ls -l',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ls -l script.sh', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '-rwxr-xr-- 1 ana equipo script.sh', you: false }
+      ],
+      body: 'Después del carácter de tipo, los 9 caracteres restantes se agrupan de tres en tres: los primeros tres son los permisos del usuario dueño, los siguientes tres los del grupo, y los últimos tres los de "otros". Siempre en el mismo orden dentro de cada grupo: r, w, x.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Practica',
+      prompt: 'Escribe ls -l script.sh y presiona Enter',
+      context: 'ls -l te muestra la cadena completa de permisos de ese archivo.',
+      hint: 'Es el mismo comando de la lección anterior, con el nombre de este archivo.',
+      command: 'ls -l script.sh',
+      output: '-rwxr-xr-- 1 ana equipo 512 script.sh',
+      successMsg: 'rwx para ana (usuario), r-x para equipo (grupo), r-- para el resto (otros).'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'El guion "-" significa "sin ese permiso"',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'r-x significa: lee y ejecuta, no escribe', you: false }
+      ],
+      body: 'Dentro de cada grupo de tres, cada posición es fija: la primera es r o -, la segunda w o -, la tercera x o -. Un guion en esa posición no significa "nada", significa específicamente "este rol no tiene ese permiso". Por eso r-x se lee siempre como "puede leer, no puede escribir, puede ejecutar" — nunca cambia el orden.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ves el permiso rw- para el grupo de un archivo. ¿Qué puede hacer ese grupo?',
+      context: 'Recuerda que el orden dentro de cada bloque de tres siempre es r, w, x.',
+      options: ['Leer y escribir, pero no ejecutar', 'Solo ejecutar', 'Leer, escribir y ejecutar'],
+      correctIdx: 0,
+      explain: 'rw- tiene r y w activos, y un guion en la posición de x. El grupo puede leer y escribir el archivo, pero no ejecutarlo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'En la práctica',
+      prompt: 'Dos combinaciones muy comunes',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'rwxr-xr-x → un programa o script', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'rw-r--r-- → un documento normal', you: false }
+      ],
+      body: 'No hace falta memorizar combinaciones, pero dos aparecen todo el tiempo. rwxr-xr-x es típica de programas y scripts: el dueño puede leer, escribir y ejecutar, mientras que el grupo y "otros" solo pueden leer y ejecutar (no modificar). rw-r--r-- es típica de documentos normales: todos pueden leer, pero solo el dueño puede escribir, y nadie tiene x porque no tiene sentido "ejecutar" un documento de texto.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Un script instalado en el sistema tiene permisos rwxr-xr-x. ¿Quiénes pueden ejecutarlo?',
+      context: 'Fíjate en la tercera posición de cada uno de los tres bloques.',
+      options: ['Solo el dueño', 'El dueño y el grupo, pero no otros', 'El dueño, el grupo y otros: los tres tienen x'],
+      correctIdx: 2,
+      explain: 'Los tres bloques (rwx, r-x, r-x) tienen la x activa en la última posición. Los tres roles pueden ejecutar el script, aunque solo el dueño puede modificarlo.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'notas.txt tiene permisos rw-r--r-- y notas.sh tiene rwxr-xr-x, pero ambos contienen exactamente el mismo texto. ¿Cuál es la diferencia real entre los dos?',
+      context: 'Piensa en qué controla exactamente el permiso x, y qué no cambia por sí solo el contenido de un archivo.',
+      options: ['notas.sh puede ejecutarse directamente como programa; notas.txt no', 'No hay ninguna diferencia real entre ambos', 'notas.txt ocupa menos espacio en disco que notas.sh'],
+      correctIdx: 0,
+      explain: 'El contenido puede ser idéntico: lo que cambia es únicamente el permiso x. Con él activo, el sistema te deja ejecutar el archivo como un programa; sin él, solo puedes leerlo o editarlo como texto.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'En una carpeta, rwx significa otra cosa',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>', text: 'r: listar · w: crear o borrar dentro · x: entrar', you: false }
+      ],
+      body: 'Sobre una carpeta, los tres permisos cambian de sentido. r te deja listar los nombres que hay dentro (ls). w te deja crear, renombrar o borrar cosas dentro de ella. x te deja "entrar" a la carpeta con cd y acceder a lo que hay dentro, aunque ya sepas el nombre exacto. Sin x, ni siquiera puedes entrar, aunque tengas r.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Una carpeta tiene permisos r-- para "otros" (sin x). ¿Qué pasa si alguien de "otros" intenta hacer cd a esa carpeta?',
+      context: 'Piensa en qué permiso controla específicamente la posibilidad de entrar a una carpeta.',
+      options: ['Puede entrar sin problema, porque tiene r', 'No puede entrar: le falta x', 'Puede entrar, pero no ver nada dentro'],
+      correctIdx: 1,
+      explain: 'x es el permiso que controla si puedes "entrar" a una carpeta. Sin x, cd falla aunque tengas r — de hecho, con solo r tampoco podrías acceder al contenido de los archivos de adentro.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un matiz importante',
+      prompt: 'r sin x en una carpeta: puedes ver nombres, no entrar',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>', text: 'r-- → ls funciona, cd no', you: false }
+      ],
+      body: 'r y x controlan cosas distintas en una carpeta, y puedes tener una sin la otra. Con solo r (sin x), ls te muestra los nombres de lo que hay dentro, pero no puedes entrar con cd ni abrir esos archivos por su ruta. Es como poder leer los títulos en el lomo de unos libros en una estantería cerrada con llave: ves qué hay, pero no puedes sacarlos.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'El grupo tiene permisos r-x (sin w) sobre una carpeta. ¿Puede alguien del grupo crear un archivo nuevo dentro de ella?',
+      context: 'Recuerda qué permiso controla específicamente la creación y el borrado de archivos dentro de una carpeta.',
+      options: ['Sí, porque tiene r', 'No: le falta w', 'Sí, porque tiene x'],
+      correctIdx: 1,
+      explain: 'w es el permiso que permite crear, renombrar o borrar archivos dentro de una carpeta. Con r-x el grupo puede listar el contenido y entrar, pero no modificar qué hay dentro.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres ver los permisos de la propia carpeta proyectos (no de lo que hay dentro). Ordena las piezas.',
+      context: 'ls -l muestra el contenido de una carpeta; hace falta una opción distinta para ver los permisos de la carpeta como tal.',
+      chips: ['-r', 'ls', '-ld', 'proyectos', '-a'],
+      correctOrder: ['ls', '-ld', 'proyectos'],
+      explain: 'ls -ld proyectos muestra la línea de permisos de la carpeta "proyectos" en sí, en vez de listar los archivos que contiene. La "d" le indica a ls que trate el argumento como el objetivo final, no como una carpeta para explorar.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Practica',
+      prompt: 'Escribe ls -ld proyectos y presiona Enter',
+      context: 'La opción -d evita que ls entre a listar el contenido, y en cambio muestra los permisos de la carpeta misma.',
+      hint: 'Es ls, con -ld pegado, y el nombre de la carpeta.',
+      command: 'ls -ld proyectos',
+      output: 'drwxr-x--- 1 ana equipo 4096 proyectos',
+      successMsg: 'La "d" al inicio confirma que es una carpeta. rwx para ana, r-x para el grupo, --- para el resto: nadie más puede ni entrar ni ver qué hay dentro.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ves drwxr-x--- para la carpeta documentos. ¿Qué puede hacer "otros" con ella?',
+      context: 'Los últimos tres caracteres de la cadena son siempre los de "otros".',
+      options: ['Nada: no tiene ningún permiso sobre la carpeta', 'Solo leer su contenido', 'Entrar y modificar archivos dentro'],
+      correctIdx: 0,
+      explain: 'Los últimos tres caracteres son ---, sin r, w ni x. "Otros" no puede listar, modificar ni entrar a esa carpeta.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'Tu carpeta tiene los archivos despliegue.sh, descarga.log y notas.txt. Escribe ls -l desp y presiona la tecla Tab de verdad para autocompletar',
+      context: 'Solo despliegue.sh empieza con "desp", así que Tab lo completa sin ambigüedad.',
+      hint: 'Escribe ls -l desp y luego presiona la tecla Tab de tu teclado (no la escribas como texto).',
+      candidates: ['despliegue.sh', 'descarga.log', 'notas.txt'],
+      prefixTemplate: 'ls -l {prefix}',
+      startPrefix: 'desp',
+      command: 'ls -l despliegue.sh',
+      output: '-rwxr-xr-- 1 ana equipo 890 despliegue.sh',
+      successMsg: 'Tab te ahorró escribir el nombre completo, y de paso confirmaste que despliegue.sh sí tiene permiso de ejecución (x) para ana.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas ls -l y ves lrwxrwxrwx en vez de un guion o una "d" al inicio. ¿Qué tipo de elemento es?',
+      context: 'El primer carácter indica el tipo: guion para archivo, "d" para carpeta, y una tercera opción que ya viste.',
+      options: ['Un archivo normal muy permisivo', 'Un enlace simbólico (link) a otro archivo', 'Una carpeta oculta'],
+      correctIdx: 1,
+      explain: 'La "l" al inicio identifica un enlace simbólico: un acceso directo que apunta a otro archivo o carpeta, distinto de un archivo o una carpeta normal.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'rwx, en pocas palabras',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', text: 'archivo: r lee · w escribe · x ejecuta', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>', text: 'carpeta: r lista · w crea/borra · x entra', you: false }
+      ],
+      body: 'Repasemos: el primer carácter dice si es archivo (-), carpeta (d) o enlace (l). Los 9 siguientes son tres bloques de rwx para usuario, grupo y otros. En archivos, r/w/x significan leer, escribir y ejecutar — rwxr-xr-x es típico de programas, rw-r--r-- de documentos. En carpetas cambian de sentido: r lista, w crea o borra, y x te deja entrar. Un guion siempre significa que ese permiso concreto no está activo, sin importar los demás.'
+    },
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Ponlo en práctica',
+      prompt: 'Vas a revisar los permisos tanto de una carpeta como de un archivo dentro de ella, en una sola sesión de terminal.',
+      context: 'Es la misma terminal de principio a fin: lo que escribas en un paso afecta lo que ves en el siguiente.',
+      successMsg: '¡Sesión completa! Revisaste los permisos de una carpeta y de un archivo dentro de ella, usando los comandos justos para cada caso.',
+      steps: [
+        {
+          goal: 'Primero, confirma en qué carpeta estás parado.',
+          command: 'pwd',
+          output: '/home/ana/proyecto',
+          hint: 'El comando que imprime la ruta completa de tu ubicación actual, sin argumentos.',
+          tabCandidates: ['pwd']
+        },
+        {
+          goal: 'Tu carpeta actual contiene una subcarpeta llamada scripts. Revisa los permisos de esa carpeta en sí, no de lo que hay dentro.',
+          command: 'ls -ld scripts',
+          output: 'drwxr-xr-x 1 ana equipo 4096 scripts',
+          hint: 'Necesitas la opción que muestra los permisos de la carpeta misma, seguida de su nombre.',
+          tabCandidates: ['ls', 'scripts']
+        },
+        {
+          goal: 'Ahora entra a la carpeta scripts.',
+          command: 'cd scripts',
+          output: 'Ahora estás en /home/ana/proyecto/scripts',
+          hint: 'El comando para cambiar de carpeta, seguido del nombre de la carpeta destino.',
+          tabCandidates: ['cd', 'scripts']
+        },
+        {
+          goal: 'Dentro de scripts hay un archivo llamado despliegue.sh. Revisa sus permisos.',
+          command: 'ls -l despliegue.sh',
+          output: '-rwxr-xr-- 1 ana equipo 890 despliegue.sh',
+          hint: 'El mismo comando que usaste antes para ver los permisos de un archivo, con este nombre.',
+          tabCandidates: ['ls', 'despliegue.sh']
+        }
+      ]
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas ls -l y ves -rw-r--r-- para un archivo. ¿Puede el dueño ejecutarlo directamente como programa?',
+      context: 'Revisa el primer bloque de tres caracteres, que corresponde al usuario dueño.',
+      options: ['Sí, porque es el dueño', 'No: le falta el permiso x', 'Sí, pero solo si también tiene w'],
+      correctIdx: 1,
+      explain: 'El bloque del usuario es rw-, sin x. Ni siquiera el dueño puede ejecutarlo como programa hasta que se le añada el permiso de ejecución.'
+    }
+  ];
+
   const unitData = {
     1: {
       title: 'Fundamentos', icon: 'linux', subtitle: 'Unidad 1 · Nivel 1',
@@ -3849,8 +4213,8 @@
     3: {
       title: 'Archivos y permisos', icon: 'folder', subtitle: 'Unidad 3 · Nivel 3',
       lessons: [
-        { title: 'Propietarios y grupos', sub: 'usuario, grupo, otros', status: 'active', icon: 'user' },
-        { title: 'Permisos rwx', sub: 'lectura, escritura, ejecución', status: 'active', icon: 'lock' },
+        { title: 'Propietarios y grupos', sub: 'usuario, grupo, otros', status: 'active', icon: 'user', exercises: propietariosLessonSteps },
+        { title: 'Permisos rwx', sub: 'lectura, escritura, ejecución', status: 'active', icon: 'lock', exercises: permisosLessonSteps },
         { title: 'chmod', sub: 'notación numérica y simbólica', status: 'active', icon: 'folder' },
         { title: 'chown y chgrp', sub: 'cambiar propietario y grupo', status: 'active', icon: 'refresh' },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
