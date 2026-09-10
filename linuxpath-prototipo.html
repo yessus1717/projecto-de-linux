@@ -135,9 +135,94 @@
     #app {
       max-width: none;
       width: 100%;
-      flex-direction: column;
+      flex-direction: row;
       align-items: stretch;
     }
+    #app-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  /* ---- SIDEBAR DE CONTENIDO ----
+     Lista las unidades del temario; al tocar una hace scroll hasta
+     su nodo dentro del mapa. Solo visible en desktop (>=900px), igual
+     que el resto de la navegación lateral. */
+  .content-sidebar { display: none; }
+  @media (min-width: 900px) {
+    .content-sidebar {
+      display: flex;
+      flex-direction: column;
+      width: 240px;
+      flex-shrink: 0;
+      order: -1;
+      border-right: 1px solid var(--border-soft);
+      background: rgba(19,13,36,0.5);
+      padding: 20px 14px;
+      gap: 4px;
+      overflow-y: auto;
+    }
+    .content-sidebar-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-faint); padding: 4px 10px 10px;
+    }
+    .content-sidebar-entry { display: flex; flex-direction: column; }
+    .content-sidebar-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 10px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; color: var(--text-dim);
+      background: none; border: 1px solid transparent;
+      cursor: pointer; text-align: left; width: 100%;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .content-sidebar-item .icon { flex-shrink: 0; width: 18px; height: 18px; }
+    .content-sidebar-item:hover { color: var(--text); background: var(--bg-card); }
+    .content-sidebar-item.active {
+      color: var(--green); background: var(--green-deep); border-color: var(--green-dark);
+    }
+    .content-sidebar-item .dot-status {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-left: auto;
+      background: var(--border);
+    }
+    .content-sidebar-item.status-done .dot-status { background: var(--green); }
+    .content-sidebar-item.status-active .dot-status { background: var(--blue); }
+    .content-sidebar-item .chevron {
+      flex-shrink: 0; width: 14px; height: 14px; color: var(--text-faint);
+      transition: transform 0.2s ease;
+    }
+    .content-sidebar-item.expanded .chevron { transform: rotate(90deg); }
+
+    /* Panel de resumen: se "baja" con una animación de grid-template-rows
+       (0fr -> 1fr), que permite animar hacia una altura automática sin
+       tener que calcularla en JS. */
+    .content-sidebar-summary {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.25s ease;
+    }
+    .content-sidebar-entry.expanded .content-sidebar-summary { grid-template-rows: 1fr; }
+    .content-sidebar-summary-inner { overflow: hidden; }
+    .content-sidebar-summary-body {
+      margin: 2px 6px 10px 32px;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+    }
+    .content-sidebar-summary-lead {
+      font-size: 12px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;
+    }
+    .content-sidebar-summary-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .content-sidebar-summary-list li {
+      font-size: 12.5px; color: var(--text-dim); line-height: 1.35;
+      padding-left: 14px; position: relative;
+    }
+    .content-sidebar-summary-list li::before {
+      content: '·'; position: absolute; left: 2px; color: var(--text-faint); font-weight: 700;
+    }
+    .content-sidebar-summary-list li b { color: var(--text); font-weight: 600; }
   }
 
   #app::before {
@@ -614,7 +699,7 @@
      forma de placa de terminal del nodo. */
   .node-pulse-ring {
     position: absolute;
-    top: 14px; left: 50%;
+    bottom: 14px; left: 50%;
     width: 76px; height: 68px;
     transform: translateX(-50%);
     border-radius: 14px;
@@ -635,7 +720,7 @@
   }
 
   .node-label {
-    margin-top: 8px;
+    margin-bottom: 8px;
     font-size: 12px;
     font-weight: 600;
     color: var(--text-dim);
@@ -1167,6 +1252,13 @@
 
 <div id="app">
 
+  <nav class="content-sidebar" id="content-sidebar" aria-label="Contenido del temario">
+    <div class="content-sidebar-title">Contenido</div>
+    <!-- Los items se generan en JS a partir de `levels`, ver renderContentSidebar() -->
+  </nav>
+
+  <div id="app-main">
+
   <div class="topbar">
     <a class="brand" href="index.html"><span class="dot"></span>LinuxPath</a>
     <nav class="side-nav" aria-label="Navegación">
@@ -1280,6 +1372,8 @@
       <button class="primary-btn" onclick="refillAndRetry()">Recuperar corazones y reintentar</button>
     </div>
   </div>
+
+  </div><!-- /#app-main -->
 
   <!-- TOPIC PREVIEW SHEET -->
   <div class="sheet-overlay" id="sheet-overlay" onclick="closeTopicSheet()"></div>
@@ -3913,6 +4007,113 @@
     } else {
       renderMapByUnits();
     }
+    renderContentSidebar();
+  }
+
+  // ---------- SIDEBAR DE CONTENIDO ----------
+  // Pinta en #content-sidebar un item por unidad (levels). Al tocar
+  // una unidad se despliega, como un acordeón que "baja", un resumen
+  // con sus lecciones (tomado directamente de unitData), y además
+  // navega: si ya estamos en el mapa hace scroll suave hasta su nodo;
+  // si estamos en otra pantalla (lección, unidad, etc.) primero
+  // volvemos al mapa y luego hacemos scroll. En modo "seguida" no hay
+  // un nodo por unidad sino un banner separador por unidad, así que
+  // apuntamos al banner en ese caso.
+  let expandedSidebarUnit = null;
+
+  function renderContentSidebar() {
+    const nav = document.getElementById('content-sidebar');
+    if (!nav) return;
+    nav.querySelectorAll('.content-sidebar-entry').forEach(el => el.remove());
+
+    levels.forEach(level => {
+      const u = unitData[level.id];
+
+      const entry = document.createElement('div');
+      entry.className = 'content-sidebar-entry';
+      entry.dataset.unitId = level.id;
+
+      const btn = document.createElement('button');
+      btn.className = 'content-sidebar-item status-' + level.status;
+      btn.type = 'button';
+      btn.setAttribute('aria-expanded', 'false');
+      btn.innerHTML = ICONS[level.icon]
+        + '<span>' + level.title + '</span>'
+        + '<span class="dot-status" aria-hidden="true"></span>'
+        + '<svg class="icon chevron" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+      btn.onclick = () => toggleUnitSummary(level.id);
+
+      const summary = document.createElement('div');
+      summary.className = 'content-sidebar-summary';
+      summary.innerHTML = `
+        <div class="content-sidebar-summary-inner">
+          <div class="content-sidebar-summary-body">
+            <div class="content-sidebar-summary-lead">${u ? u.subtitle : ''}</div>
+            <ul class="content-sidebar-summary-list">
+              ${u ? u.lessons.map(l => `<li><b>${l.title}</b>${l.sub ? ' — ' + l.sub : ''}</li>`).join('') : ''}
+            </ul>
+          </div>
+        </div>
+      `;
+
+      entry.appendChild(btn);
+      entry.appendChild(summary);
+      nav.appendChild(entry);
+    });
+
+    updateContentSidebarActive();
+  }
+
+  // Abre/cierra el resumen de una unidad (acordeón: un resumen abierto
+  // a la vez, abrir uno cierra el anterior) y navega al mapa / hace
+  // scroll hasta su nodo.
+  function toggleUnitSummary(unitId) {
+    const nav = document.getElementById('content-sidebar');
+    if (!nav) return;
+    const wasOpen = expandedSidebarUnit === unitId;
+    expandedSidebarUnit = wasOpen ? null : unitId;
+
+    nav.querySelectorAll('.content-sidebar-entry').forEach(entry => {
+      const isThis = Number(entry.dataset.unitId) === unitId;
+      const isExpanded = isThis && !wasOpen;
+      entry.classList.toggle('expanded', isExpanded);
+      entry.querySelector('.content-sidebar-item').classList.toggle('expanded', isExpanded);
+      entry.querySelector('.content-sidebar-item').setAttribute('aria-expanded', String(isExpanded));
+    });
+
+    scrollToUnit(unitId);
+  }
+
+  // Marca como activo el item del sidebar correspondiente a la unidad
+  // actual (state.currentUnit) mientras se navega por unidad/lección;
+  // en el mapa ninguno queda marcado como "activo" de navegación.
+  function updateContentSidebarActive() {
+    const nav = document.getElementById('content-sidebar');
+    if (!nav) return;
+    nav.querySelectorAll('.content-sidebar-entry').forEach(entry => {
+      const item = entry.querySelector('.content-sidebar-item');
+      item.classList.toggle('active', Number(entry.dataset.unitId) === state.currentUnit);
+    });
+  }
+
+  function scrollToUnit(unitId) {
+    const goAndScroll = () => {
+      requestAnimationFrame(() => {
+        let target;
+        if (pathStyle === 'straight') {
+          target = document.querySelector('#path-container .path-unit-banner.c-' + levels.find(l => l.id === unitId).color);
+        } else {
+          const idx = [...levels].reverse().findIndex(l => l.id === unitId);
+          target = document.querySelectorAll('#path-container .level-node')[idx];
+        }
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    };
+
+    if (!document.getElementById('screen-map').classList.contains('active')) {
+      goToMap();
+    }
+    goAndScroll();
   }
 
   // Modo "zigzag" (por defecto): un nodo por unidad. Al tocar una
@@ -3952,8 +4153,8 @@
 
       node.innerHTML = `
         ${level.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
-        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div></div>
         <div class="node-label ${labelClass}">${level.title}</div>
+        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div></div>
       `;
       container.appendChild(node);
 
@@ -4021,17 +4222,6 @@
     orderedItems.forEach((item, i) => {
       const { lesson, unitId, unitColor, unitTitle, lessonIdx } = item;
 
-      // Banner de unidad: se inserta apenas cambiamos de unidad respecto
-      // al item anterior en el orden de pintado (es decir, al llegar al
-      // último tramo de cada unidad, porque vamos de abajo hacia arriba).
-      const prevItem = orderedItems[i - 1];
-      if (!prevItem || prevItem.unitId !== unitId) {
-        const banner = document.createElement('div');
-        banner.className = 'path-unit-banner c-' + unitColor;
-        banner.textContent = unitTitle;
-        container.appendChild(banner);
-      }
-
       const node = document.createElement('button');
       node.className = 'level-node';
       node.setAttribute('data-zigzag', i % 2 === 0 ? 'left' : 'right');
@@ -4044,8 +4234,8 @@
 
       node.innerHTML = `
         ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
-        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
         <div class="node-label ${labelClass}">${lesson.title}</div>
+        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
       `;
       node.onclick = () => {
         if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
@@ -4053,6 +4243,22 @@
         startLesson(lessonIdx);
       };
       container.appendChild(node);
+
+      // Banner de unidad: el contenedor usa column-reverse, así que lo
+      // insertado DESPUÉS en el DOM queda visualmente MÁS ARRIBA. Para
+      // que el banner aparezca arriba de la primera lección que ve el
+      // usuario de esta unidad (el arranque visual de su recorrido), se
+      // agrega recién después de pintar ese último nodo de la unidad:
+      // se detecta comparando con el SIGUIENTE item del array (el que
+      // ya pertenece a la unidad anterior en orden natural / superior
+      // en pantalla), o si ya no quedan más items.
+      const nextItem = orderedItems[i + 1];
+      if (!nextItem || nextItem.unitId !== unitId) {
+        const banner = document.createElement('div');
+        banner.className = 'path-unit-banner c-' + unitColor;
+        banner.textContent = unitTitle;
+        container.appendChild(banner);
+      }
 
       const isLast = i === orderedItems.length - 1;
       if (!isLast) {
@@ -4257,8 +4463,8 @@
 
       node.innerHTML = `
         ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
-        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
         <div class="node-label ${labelClass}">${lesson.title}</div>
+        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
       `;
       node.onclick = () => {
         if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
@@ -4288,6 +4494,7 @@
 
   function openUnit(id) {
     state.currentUnit = id;
+    updateContentSidebarActive();
     const u = unitData[id];
     document.getElementById('unit-icon').innerHTML = ICONS[u.icon];
     document.getElementById('unit-title').textContent = u.title;
@@ -4303,7 +4510,7 @@
     showScreen('screen-unit');
   }
 
-  function goToMap() { renderMap(); showScreen('screen-map'); }
+  function goToMap() { state.currentUnit = null; renderMap(); showScreen('screen-map'); }
 
   // En modo "zigzag" vuelve a la pantalla de la unidad (su propio
   // camino de lecciones). En modo "seguida" no existe esa pantalla
