@@ -16,6 +16,16 @@
 
     var meta = session.user.user_metadata || {};
     var name = meta.display_name || meta.full_name || meta.name || session.user.email.split('@')[0];
+
+    // Nombre de usuario "estilo Linux": minúsculas, sin acentos ni
+    // espacios, para que el prompt user@linuxpath:~$ del mapa se vea
+    // como un usuario real del sistema en vez de un genérico "user".
+    var linuxUser = name.trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '') || 'user';
+    var mapPromptUser = document.getElementById('map-prompt-user');
+    if (mapPromptUser) mapPromptUser.textContent = linuxUser + '@linuxpath';
+
     var avatarUrl = meta.avatar_url || meta.picture || '';
     var initial = name.trim().charAt(0).toUpperCase();
 
@@ -118,13 +128,14 @@
 
   /* ---- DESKTOP LAYOUT ----
      A partir de 900px dejamos de simular una app móvil flotando en el
-     centro de la pantalla: el topbar se convierte en un sidebar fijo a
-     la izquierda y el contenido aprovecha el ancho disponible. */
+     centro de la pantalla: el topbar se convierte en una barra
+     horizontal ancha arriba (con progreso y stats incluidos) y el
+     contenido aprovecha el ancho disponible debajo. */
   @media (min-width: 900px) {
     #app {
       max-width: none;
       width: 100%;
-      flex-direction: row;
+      flex-direction: column;
       align-items: stretch;
     }
   }
@@ -150,12 +161,18 @@
     }
   }
 
-  /* ---- TOP BAR ---- */
+  /* ---- TOP BAR ----
+     Ahora vive todo aquí: marca, navegación, barra de progreso y
+     stats (racha/xp/corazones). En mobile se envuelve en dos filas
+     porque no cabe todo en una sola línea; en desktop es una barra
+     horizontal ancha con todo en fila. */
   .topbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    gap: 12px 20px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--border-soft);
     position: sticky;
     top: 0;
@@ -164,53 +181,76 @@
     -webkit-backdrop-filter: blur(6px);
     z-index: 10;
   }
+  .topbar .map-progress { order: 3; flex: 1 1 220px; }
+  .topbar .stats { order: 4; }
+  @media (max-width: 559px) {
+    /* Fila 1: marca + avatar. Fila 2: progreso + stats, a todo lo ancho. */
+    .topbar .brand { order: 1; }
+    .topbar #topbar-avatar-slot { order: 2; margin-left: auto; }
+    .topbar .side-nav { display: none; }
+    .topbar .map-progress { order: 3; flex-basis: 100%; max-width: none; }
+    .topbar .stats { order: 4; flex-basis: 100%; justify-content: center; }
+  }
 
   @media (min-width: 900px) {
     .topbar {
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 0;
-      width: 240px;
+      flex-wrap: nowrap;
+      width: 100%;
+      height: auto;
       flex-shrink: 0;
-      height: 100%;
-      padding: 24px 18px;
-      border-bottom: none;
-      border-right: 1px solid var(--border-soft);
-      position: relative;
-      z-index: 1;
-      background: rgba(19,13,36,0.5);
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-    }
-    .topbar .brand {
-      font-size: 16px;
-      padding: 6px 8px 20px;
+      padding: 14px 24px;
       border-bottom: 1px solid var(--border-soft);
-      margin-bottom: 20px;
+      border-right: none;
+      position: sticky;
+      z-index: 10;
+      background: rgba(10,7,20,0.92);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
-    .topbar .stats {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-      flex: 1;
-      min-height: 0;
-    }
-    .topbar .stat-pill {
-      font-size: 14px;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-soft);
-    }
-    .topbar .stat-pill .icon { width: 16px; height: 16px; }
+    .topbar .brand { font-size: 15px; order: 0; }
+    .topbar .brand .dot { width: 8px; height: 8px; }
+    .topbar .side-nav { display: flex; order: 1; }
+    .topbar .map-progress { order: 2; flex: 0 1 280px; }
+    .topbar .stats { order: 3; }
     .topbar #topbar-avatar-slot,
     .topbar .topbar-avatar {
-      margin-top: auto;
-      align-self: flex-start;
-      width: 36px; height: 36px;
+      order: 4;
+      width: 34px; height: 34px;
       font-size: 14px;
+    }
+  }
+
+  /* Navegación estilo Duolingo: un único ítem activo (Ruta)
+     representado como una placa de terminal en miniatura, coherente con
+     los nodos del camino. Solo visible en el topbar de escritorio,
+     ahora en fila junto al resto del topbar (antes era una columna
+     de sidebar; el topbar dejó de ser un sidebar lateral). */
+  .side-nav {
+    display: none;
+  }
+  @media (min-width: 900px) {
+    .side-nav {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+    }
+    .side-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      color: var(--text-faint);
+      background: none;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .side-nav-item:hover { color: var(--text-dim); background: var(--bg-card); }
+    .side-nav-item.active {
+      color: var(--green);
+      background: var(--green-deep);
+      border-color: var(--green);
     }
   }
 
@@ -318,6 +358,50 @@
   .map-header { text-align: center; margin-bottom: 36px; position: relative; z-index: 1; }
   .map-header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
   .map-header p { font-size: 13px; color: var(--text-dim); }
+
+  /* Barra de progreso: ahora vive dentro del topbar (ver reglas de
+     .topbar .map-progress más arriba para el ancho en cada tamaño),
+     así que aquí solo queda su estilo interno. */
+  .map-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+  }
+  .map-progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+  .map-prompt-user { color: var(--green); }
+  .map-prompt-sep { color: var(--text-faint); }
+  .map-prompt-cmd { color: var(--text-dim); }
+  .map-progress-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    overflow: hidden;
+  }
+  .map-progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 5px 0 0 5px;
+    background: linear-gradient(90deg, var(--green-dark), var(--green));
+    transition: width 0.5s cubic-bezier(.32,.72,0,1);
+  }
+  /* Cuando la ruta llega al 100%, el relleno redondea también su
+     esquina derecha en vez de quedar recortado a media barra. */
+  .map-progress-fill.complete { border-radius: 5px; }
+  .map-progress-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
   .reset-progress-btn {
     margin-top: 12px; background: none; border: 1px solid var(--border);
     color: var(--text-dim); font-size: 11px; padding: 5px 10px; border-radius: 20px;
@@ -381,8 +465,8 @@
     background: none;
     border: none;
     padding: 14px 0;
-    width: 96px;
-    max-width: 96px;
+    width: 100px;
+    max-width: 100px;
     margin: 0 auto;
     transition: transform 0.15s ease;
   }
@@ -411,18 +495,85 @@
     :root { --zigzag-offset: 110px; }
   }
 
-  .node-shape {
-    width: 68px;
-    height: 68px;
-    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-    display: flex;
+  /* ---- Toggle de estilo de ruta (zigzag vs. seguida) ---- */
+  .path-style-toggle {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    font-size: 26px;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .path-style-toggle .toggle-label {
+    cursor: pointer;
+    user-select: none;
+  }
+  .path-style-toggle .toggle-label.active-choice {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .path-style-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--border-soft, #333);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .path-style-switch .switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text);
+    transition: transform 0.18s ease;
+  }
+  .path-style-switch[aria-checked="true"] .switch-knob {
+    transform: translateX(18px);
+    background: var(--green, #4fffb4);
+  }
+
+  /* Cada nodo es una placa de terminal en miniatura: una barra de
+     título con los tres puntos de semáforo (como una ventana real de
+     terminal) y, debajo, el ícono del nivel o el check de completado
+     haciendo de "contenido" de esa consola. */
+  .node-shape {
+    width: 76px;
+    height: 68px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
     border: 2px solid;
     position: relative;
     z-index: 1;
+    overflow: hidden;
     transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+
+  .node-shape::before {
+    content: '';
+    display: block;
+    height: 16px;
+    flex-shrink: 0;
+    border-bottom: 1px solid currentColor;
+    opacity: 0.35;
+    background:
+      radial-gradient(circle 3px at 10px 8px, currentColor 96%, transparent 100%),
+      radial-gradient(circle 3px at 22px 8px, currentColor 96%, transparent 100%),
+      radial-gradient(circle 3px at 34px 8px, currentColor 96%, transparent 100%);
+  }
+
+  .node-shape .node-shape-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
   }
 
   .level-node:hover .node-shape.done,
@@ -459,14 +610,14 @@
 
   /* Anillo pulsante detrás del nodo activo: marca visualmente "aquí estás"
      dentro del camino, como el marcador de posición actual en un mapa.
-     Va como hermano de .node-shape (no dentro) para no quedar recortado
-     por el clip-path hexagonal. */
+     Ahora es un rectángulo redondeado (no un círculo) para acompañar la
+     forma de placa de terminal del nodo. */
   .node-pulse-ring {
     position: absolute;
     top: 14px; left: 50%;
-    width: 68px; height: 68px;
+    width: 76px; height: 68px;
     transform: translateX(-50%);
-    border-radius: 50%;
+    border-radius: 14px;
     border: 2px solid var(--green);
     opacity: 0;
     animation: nodePulse 2.2s ease-out infinite;
@@ -523,6 +674,31 @@
   }
   .path-cap span { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 6px; }
 
+  /* Separador de unidad dentro del camino "seguido": marca dónde
+     termina una unidad y empieza la siguiente cuando todas las
+     lecciones están encadenadas en un solo recorrido continuo. */
+  .path-unit-banner {
+    z-index: 1;
+    width: 100%;
+    max-width: 280px;
+    margin: 22px auto 10px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  .path-unit-banner.c-green { color: var(--green); border-color: var(--green-dark); }
+  .path-unit-banner.c-blue { color: var(--blue); border-color: var(--blue); }
+  .path-unit-banner.c-purple { color: var(--purple); border-color: var(--purple); }
+  .path-unit-banner.c-orange { color: var(--orange); border-color: var(--orange); }
+  .path-unit-banner.c-red { color: var(--red); border-color: var(--red); }
+
   /* ---- UNIT SCREEN ---- */
   .unit-scroll { flex: 1; padding: 24px 20px 40px; overflow-y: auto; min-height: 0; }
 
@@ -533,7 +709,7 @@
       flex-direction: column;
       align-items: center;
     }
-    .back-row, .unit-card, .lesson-list { width: 100%; max-width: 640px; }
+    .back-row, .unit-card, #lesson-list { width: 100%; max-width: 640px; }
   }
 
   .back-row {
@@ -993,12 +1169,26 @@
 
   <div class="topbar">
     <a class="brand" href="index.html"><span class="dot"></span>LinuxPath</a>
+    <nav class="side-nav" aria-label="Navegación">
+      <span class="side-nav-item active" aria-current="page" title="Ruta">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>
+      </span>
+    </nav>
+    <div class="map-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la ruta" id="map-progress">
+      <div class="map-progress-label">
+        <span class="map-prompt-user" id="map-prompt-user">user@linuxpath</span><span class="map-prompt-sep">:~$</span> <span class="map-prompt-cmd">progreso</span>
+      </div>
+      <div class="map-progress-track">
+        <div class="map-progress-fill" id="map-progress-fill"></div>
+      </div>
+      <span class="map-progress-pct" id="map-progress-pct">0%</span>
+    </div>
     <div class="stats">
       <div class="stat-pill streak"><svg class="icon flame-pulse" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 3-3 4-3 8a3 3 0 006 0c1 1 2 2.5 2 5a7 7 0 11-14 0c0-4 2-6 3-8 1 2 1.5 1 2-1 .5-2 .5-3 4-4z"/></svg> <span class="stat-value" id="streak-count">0</span></div>
       <div class="stat-pill xp"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10"/></svg> <span class="stat-value" id="xp-count">0</span></div>
       <div class="stat-pill hearts"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" style="fill:currentColor" aria-hidden="true"><path d="M12 20s-7-4.5-9.5-9C.7 7.2 2.5 4 6 4c2 0 3.5 1 6 3.5C14.5 5 16 4 18 4c3.5 0 5.3 3.2 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg> <span id="hearts-count">5</span></div>
-      <span id="topbar-avatar-slot"></span>
     </div>
+    <span id="topbar-avatar-slot"></span>
   </div>
 
   <!-- MAP SCREEN -->
@@ -1016,6 +1206,13 @@
       <div class="map-header">
         <h1>Tu ruta Linux</h1>
         <p>Completa unidades para desbloquear el siguiente nivel</p>
+        <div class="path-style-toggle">
+          <span class="toggle-label" id="path-style-label-zigzag" onclick="setPathStyle('zigzag')">Zigzag</span>
+          <button class="path-style-switch" id="path-style-switch" role="switch" aria-checked="false" aria-label="Cambiar estilo de ruta" onclick="togglePathStyle()">
+            <span class="switch-knob"></span>
+          </button>
+          <span class="toggle-label" id="path-style-label-straight" onclick="setPathStyle('straight')">Seguida</span>
+        </div>
         <button class="reset-progress-btn" onclick="if(confirm('¿Reiniciar todo tu progreso?')) resetProgress();">Reiniciar progreso</button>
       </div>
       <div class="path" id="path-container"></div>
@@ -1037,7 +1234,7 @@
         <div class="progress-track"><div class="progress-fill" id="unit-progress-fill" style="width:40%"></div></div>
         <div class="progress-text" id="unit-progress-text">2 / 5 lecciones</div>
       </div>
-      <div class="lesson-list" id="lesson-list"></div>
+      <div class="path" id="lesson-list"></div>
     </div>
   </div>
 
@@ -1117,6 +1314,13 @@
     mistakesInLesson: 0,
     sessionQueue: []
   };
+
+  // Estilo de ruta elegido por el usuario: 'zigzag' (el clásico
+  // serpenteante estilo Duolingo) o 'straight' (todos los nodos
+  // seguidos en el mismo eje). Se lee de localStorage al arrancar y
+  // se persiste cada vez que el usuario lo cambia con el toggle.
+  const PATH_STYLE_KEY = 'linuxpath-path-style';
+  let pathStyle = 'zigzag';
 
   const ICONS = {
     linux: '<svg class="icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9 9c.5-1.5 2-2 3-2s2.5.5 3 2M9 12h6M9 15c1 1 5 1 6 0"/></svg>',
@@ -3620,7 +3824,103 @@
   ];
 
   // ---------- RENDER MAP ----------
+  // Calcula qué porcentaje de todas las lecciones (de todas las
+  // unidades) ya quedaron en estado 'done' y lo refleja en la barra
+  // de progreso del header del mapa.
+  function updateProgressBar() {
+    const bar = document.getElementById('map-progress');
+    if (!bar) return;
+
+    let total = 0;
+    let done = 0;
+    Object.values(unitData).forEach(u => {
+      u.lessons.forEach(l => {
+        total++;
+        if (l.status === 'done') done++;
+      });
+    });
+
+    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    bar.setAttribute('aria-valuenow', String(pct));
+    document.getElementById('map-progress-pct').textContent = pct + '%';
+    const fill = document.getElementById('map-progress-fill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('complete', pct >= 100);
+  }
+
+  // ---------- ESTILO DE RUTA (zigzag vs. seguida) ----------
+
+  function loadPathStyle() {
+    try {
+      const saved = localStorage.getItem(PATH_STYLE_KEY);
+      if (saved === 'straight' || saved === 'zigzag') pathStyle = saved;
+    } catch (e) {
+      // localStorage no disponible: seguimos con el valor por defecto.
+    }
+  }
+
+  function savePathStyle() {
+    try { localStorage.setItem(PATH_STYLE_KEY, pathStyle); } catch (e) {}
+  }
+
+  function updatePathStyleToggleUI() {
+    const isStraight = pathStyle === 'straight';
+    const toggle = document.getElementById('path-style-switch');
+    if (toggle) toggle.setAttribute('aria-checked', String(isStraight));
+    const zigzagLabel = document.getElementById('path-style-label-zigzag');
+    const straightLabel = document.getElementById('path-style-label-straight');
+    if (zigzagLabel) zigzagLabel.classList.toggle('active-choice', !isStraight);
+    if (straightLabel) straightLabel.classList.toggle('active-choice', isStraight);
+  }
+
+  // Vuelve a dibujar cualquier ruta visible ahora mismo (mapa o, si el
+  // usuario está dentro de una unidad, el camino de lecciones) para que
+  // el cambio de estilo se refleje al instante, incluyendo los
+  // conectores SVG curvos que dependen de la posición real de cada nodo.
+  function rerenderActivePath() {
+    const mapScreen = document.getElementById('screen-map');
+    const unitScreen = document.getElementById('screen-unit');
+    if (unitScreen && unitScreen.classList.contains('active') && state.currentUnit) {
+      renderLessonPath(state.currentUnit);
+    } else if (mapScreen && mapScreen.classList.contains('active')) {
+      renderMap();
+    }
+  }
+
+  function setPathStyle(newStyle) {
+    if (newStyle !== 'zigzag' && newStyle !== 'straight') return;
+    if (pathStyle === newStyle) return;
+    pathStyle = newStyle;
+    savePathStyle();
+    updatePathStyleToggleUI();
+    rerenderActivePath();
+  }
+
+  function togglePathStyle() {
+    setPathStyle(pathStyle === 'straight' ? 'zigzag' : 'straight');
+  }
+
+  // Despachador: decide qué layout del mapa dibujar según el estilo de
+  // ruta elegido por el usuario. 'zigzag' conserva el comportamiento
+  // original (un nodo por unidad, se entra a cada una por separado).
+  // 'straight' aplana todas las lecciones de todas las unidades en un
+  // único camino continuo (sigue siendo zigzag visualmente: lo único
+  // que cambia es la estructura de navegación, no el trazo).
   function renderMap() {
+    if (pathStyle === 'straight') {
+      renderMapFlattened();
+    } else {
+      renderMapByUnits();
+    }
+  }
+
+  // Modo "zigzag" (por defecto): un nodo por unidad. Al tocar una
+  // unidad se abre el sheet con sus lecciones y desde ahí se entra a
+  // screen-unit, que dibuja su propio camino con renderLessonPath().
+  function renderMapByUnits() {
+    updateProgressBar();
+
     const container = document.getElementById('path-container');
     container.innerHTML = '';
 
@@ -3634,7 +3934,8 @@
     cap.innerHTML = '<span class="icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M4 18l-1-9 5 4 4-7 4 7 5-4-1 9"/></svg></span><span>Linux Pro</span>';
     container.appendChild(cap);
 
-    [...levels].reverse().forEach((level, i) => {
+    const orderedLevels = [...levels].reverse();
+    orderedLevels.forEach((level, i) => {
       const node = document.createElement('button');
       node.className = 'level-node';
       // data-zigzag se calcula sobre el índice real del nivel (i), no
@@ -3651,7 +3952,7 @@
 
       node.innerHTML = `
         ${level.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
-        <div class="node-shape ${shapeClass} ${colorClass}">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div>
+        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div></div>
         <div class="node-label ${labelClass}">${level.title}</div>
       `;
       container.appendChild(node);
@@ -3677,14 +3978,111 @@
 
     // Esperamos al siguiente frame para que el navegador ya haya
     // calculado el layout (posiciones reales del zigzag) antes de medir.
-    requestAnimationFrame(() => drawPathConnectors(container, svg));
+    requestAnimationFrame(() => drawPathConnectors(container, svg, orderedLevels));
+  }
+
+  // Modo "seguida": une las lecciones de las 5 unidades en un solo
+  // camino zigzag continuo, dibujado directamente sobre el mapa
+  // principal. Cada nodo es una lección (no una unidad), coloreada
+  // según la unidad a la que pertenece, con un banner separador cada
+  // vez que se cruza a la siguiente unidad. Tocar un nodo entra
+  // directo a esa lección, sin pasar por el sheet ni por screen-unit.
+  function renderMapFlattened() {
+    updateProgressBar();
+
+    const container = document.getElementById('path-container');
+    container.innerHTML = '';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'path-connectors');
+    svg.setAttribute('aria-hidden', 'true');
+    container.appendChild(svg);
+
+    const cap = document.createElement('div');
+    cap.className = 'path-cap';
+    cap.innerHTML = '<span class="icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M4 18l-1-9 5 4 4-7 4 7 5-4-1 9"/></svg></span><span>Linux Pro</span>';
+    container.appendChild(cap);
+
+    // Aplanamos: un item por cada lección de cada unidad, en el mismo
+    // orden en que aparecen las unidades (levels) y sus lecciones.
+    const flatItems = [];
+    levels.forEach(level => {
+      const u = unitData[level.id];
+      if (!u) return;
+      u.lessons.forEach((lesson, lessonIdx) => {
+        flatItems.push({ unitId: level.id, unitColor: level.color, unitTitle: u.title, lessonIdx, lesson });
+      });
+    });
+
+    // Igual que en los demás caminos, se pintan de abajo hacia arriba
+    // (column-reverse), así que invertimos el orden antes de recorrer.
+    const orderedItems = [...flatItems].reverse();
+
+    orderedItems.forEach((item, i) => {
+      const { lesson, unitId, unitColor, unitTitle, lessonIdx } = item;
+
+      // Banner de unidad: se inserta apenas cambiamos de unidad respecto
+      // al item anterior en el orden de pintado (es decir, al llegar al
+      // último tramo de cada unidad, porque vamos de abajo hacia arriba).
+      const prevItem = orderedItems[i - 1];
+      if (!prevItem || prevItem.unitId !== unitId) {
+        const banner = document.createElement('div');
+        banner.className = 'path-unit-banner c-' + unitColor;
+        banner.textContent = unitTitle;
+        container.appendChild(banner);
+      }
+
+      const node = document.createElement('button');
+      node.className = 'level-node';
+      node.setAttribute('data-zigzag', i % 2 === 0 ? 'left' : 'right');
+      node.setAttribute('aria-label', lesson.title + (lesson.status === 'locked' ? ' (bloqueada)' : ''));
+      if (lesson.status === 'locked') node.setAttribute('tabindex', '-1');
+
+      const shapeClass = lesson.status === 'active' ? 'active' : (lesson.status === 'done' ? 'done' : 'locked');
+      const labelClass = lesson.status === 'active' ? 'active-label' : '';
+      const colorClass = lesson.status === 'locked' ? '' : ('c-' + unitColor);
+
+      node.innerHTML = `
+        ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
+        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
+        <div class="node-label ${labelClass}">${lesson.title}</div>
+      `;
+      node.onclick = () => {
+        if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
+        state.currentUnit = unitId;
+        startLesson(lessonIdx);
+      };
+      container.appendChild(node);
+
+      const isLast = i === orderedItems.length - 1;
+      if (!isLast) {
+        const gem = document.createElement('div');
+        const earned = lesson.status === 'done';
+        gem.className = 'path-gem' + (earned ? ' earned' : '');
+        gem.setAttribute('aria-hidden', 'true');
+        gem.innerHTML = ICONS.sparkle;
+        container.appendChild(gem);
+      }
+    });
+
+    const start = document.createElement('div');
+    start.className = 'path-cap';
+    start.innerHTML = '<span class="icon-wrap">' + ICONS.linux + '</span><span>Comenzar</span>';
+    container.appendChild(start);
+
+    const connectorItems = orderedItems.map(item => ({ status: item.lesson.status, color: item.unitColor }));
+    requestAnimationFrame(() => drawPathConnectors(container, svg, connectorItems));
   }
 
   // Dibuja el camino real conectando el centro de cada nodo con el
   // siguiente mediante una curva suave, en vez de una línea de fondo
   // aproximada. El tramo se pinta en el color del nivel de origen y
   // queda "encendido" (más sólido) si ese nivel ya está superado.
-  function drawPathConnectors(container, svg) {
+  // orderedItems: array de { status, color } en el mismo orden en que se
+  // añadieron los nodos al contenedor (item i corresponde al tramo entre
+  // el nodo i y el nodo i+1). Genérico para el mapa de unidades y para
+  // el camino de lecciones dentro de una unidad.
+  function drawPathConnectors(container, svg, orderedItems) {
     const rect = container.getBoundingClientRect();
     svg.setAttribute('width', rect.width);
     svg.setAttribute('height', rect.height);
@@ -3693,7 +4091,6 @@
 
     const nodes = Array.from(container.querySelectorAll('.level-node'));
     const colorVar = { green: '--green', blue: '--blue', purple: '--purple', orange: '--orange', red: '--red' };
-    const orderedLevels = [...levels].reverse();
 
     const points = nodes.map(node => {
       const shape = node.querySelector('.node-shape');
@@ -3707,9 +4104,9 @@
     for (let i = 0; i < points.length - 1; i++) {
       const from = points[i];
       const to = points[i + 1];
-      const level = orderedLevels[i];
-      const earned = level.status === 'done';
-      const color = earned ? `var(${colorVar[level.color] || '--green'})` : 'var(--border)';
+      const item = orderedItems[i];
+      const earned = item.status === 'done';
+      const color = earned ? `var(${colorVar[item.color] || '--green'})` : 'var(--border)';
 
       const midY = (from.y + to.y) / 2;
       const d = `M ${from.x} ${from.y} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y}`;
@@ -3821,6 +4218,74 @@
   });
 
   // ---------- UNIT SCREEN ----------
+  // Camino de lecciones dentro de una unidad: mismos "nodos-terminal"
+  // zigzagueantes y conectores curvos que el mapa de unidades, pero
+  // recorriendo u.lessons y pintados siempre en el color de esa unidad.
+  function renderLessonPath(unitId) {
+    const u = unitData[unitId];
+    const level = levels.find(l => l.id === unitId);
+    const unitColorKey = level ? level.color : 'green';
+    const unitColorClass = 'c-' + unitColorKey;
+
+    const container = document.getElementById('lesson-list');
+    container.innerHTML = '';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'path-connectors');
+    svg.setAttribute('aria-hidden', 'true');
+    container.appendChild(svg);
+
+    const topCap = document.createElement('div');
+    topCap.className = 'path-cap';
+    topCap.innerHTML = '<span class="icon">' + ICONS.trophy + '</span><span>¡Unidad completa!</span>';
+    container.appendChild(topCap);
+
+    const orderedLessons = [...u.lessons].reverse();
+    const total = u.lessons.length;
+
+    orderedLessons.forEach((lesson, i) => {
+      const originalIdx = total - 1 - i;
+      const node = document.createElement('button');
+      node.className = 'level-node';
+      node.setAttribute('data-zigzag', i % 2 === 0 ? 'left' : 'right');
+      node.setAttribute('aria-label', lesson.title + (lesson.status === 'locked' ? ' (bloqueada)' : ''));
+      if (lesson.status === 'locked') node.setAttribute('tabindex', '-1');
+
+      const shapeClass = lesson.status === 'active' ? 'active' : (lesson.status === 'done' ? 'done' : 'locked');
+      const labelClass = lesson.status === 'active' ? 'active-label' : '';
+      const colorClass = lesson.status === 'locked' ? '' : unitColorClass;
+
+      node.innerHTML = `
+        ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
+        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
+        <div class="node-label ${labelClass}">${lesson.title}</div>
+      `;
+      node.onclick = () => {
+        if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
+        startLesson(originalIdx);
+      };
+      container.appendChild(node);
+
+      const isLast = i === orderedLessons.length - 1;
+      if (!isLast) {
+        const gem = document.createElement('div');
+        const earned = lesson.status === 'done';
+        gem.className = 'path-gem' + (earned ? ' earned' : '');
+        gem.setAttribute('aria-hidden', 'true');
+        gem.innerHTML = ICONS.sparkle;
+        container.appendChild(gem);
+      }
+    });
+
+    const startCap = document.createElement('div');
+    startCap.className = 'path-cap';
+    startCap.innerHTML = '<span class="icon-wrap">' + ICONS[u.icon] + '</span><span>Comenzar</span>';
+    container.appendChild(startCap);
+
+    const orderedItems = orderedLessons.map(l => ({ status: l.status, color: unitColorKey }));
+    requestAnimationFrame(() => drawPathConnectors(container, svg, orderedItems));
+  }
+
   function openUnit(id) {
     state.currentUnit = id;
     const u = unitData[id];
@@ -3833,40 +4298,24 @@
     document.getElementById('unit-progress-fill').style.width = pct + '%';
     document.getElementById('unit-progress-text').textContent = `${doneCount} / ${u.lessons.length} lecciones`;
 
-    const list = document.getElementById('lesson-list');
-    list.innerHTML = '';
-    u.lessons.forEach((lesson, idx) => {
-      const row = document.createElement('div');
-      row.className = `lesson-row ${lesson.status}`;
-      row.setAttribute('role', 'button');
-      row.setAttribute('tabindex', lesson.status === 'locked' ? '-1' : '0');
-      row.setAttribute('aria-label', lesson.title + (lesson.status === 'locked' ? ' (bloqueada)' : ''));
-      row.onclick = () => {
-        if (lesson.status === 'locked') return;
-        startLesson(idx);
-      };
-      row.onkeydown = (e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && lesson.status !== 'locked') {
-          e.preventDefault();
-          startLesson(idx);
-        }
-      };
-      row.innerHTML = `
-        <div class="lesson-num">${lesson.status === 'done' ? ICONS.check : ICONS[lesson.icon]}</div>
-        <div class="lesson-info">
-          <h3>${lesson.title}</h3>
-          <p>${lesson.sub}</p>
-        </div>
-        <div class="lesson-chevron">${lesson.status === 'locked' ? '<svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>' : '›'}</div>
-      `;
-      list.appendChild(row);
-    });
+    renderLessonPath(id);
 
     showScreen('screen-unit');
   }
 
   function goToMap() { renderMap(); showScreen('screen-map'); }
-  function goToUnit() { openUnit(state.currentUnit); }
+
+  // En modo "zigzag" vuelve a la pantalla de la unidad (su propio
+  // camino de lecciones). En modo "seguida" no existe esa pantalla
+  // intermedia -- todas las lecciones viven en el mapa principal --
+  // así que en su lugar volvemos directo al mapa.
+  function goToUnit() {
+    if (pathStyle === 'straight') {
+      goToMap();
+    } else {
+      openUnit(state.currentUnit);
+    }
+  }
 
   // ---------- LESSON FLOW ----------
   let currentSelection = null;
@@ -4577,9 +5026,11 @@
 
   // ---------- INIT ----------
   loadProgress();
+  loadPathStyle();
   document.getElementById('streak-count').textContent = state.streak;
   document.getElementById('xp-count').textContent = state.xp;
   document.getElementById('hearts-count').textContent = state.hearts;
+  updatePathStyleToggleUI();
   renderMap();
 </script>
 
