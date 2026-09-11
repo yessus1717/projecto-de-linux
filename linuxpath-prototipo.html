@@ -732,6 +732,21 @@
   }
   .node-label.active-label { color: var(--text); }
 
+  /* ---- NODO "DESAFÍO FINAL": tarjeta más grande y centrada (sin
+     zigzag) que las lecciones normales, con una pequeña insignia
+     ilustrada y, si la unidad ya tiene contenido, una frase de
+     introducción sobre lo que está a punto de pasar. */
+  .level-node-final { width: 100%; max-width: 300px; }
+  .node-shape.final-node-shape { width: 100%; height: auto; border-radius: 16px; }
+  .final-node-shape .node-shape-body {
+    flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 8px; padding: 18px 18px 20px; text-align: center;
+  }
+  .final-badge { display: flex; align-items: center; justify-content: center; }
+  .final-badge svg.icon { width: 26px; height: 26px; }
+  .final-node-title { font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif; color: var(--text); }
+  .final-node-intro { font-size: 12.5px; font-weight: 500; line-height: 1.45; font-family: 'Inter', sans-serif; color: var(--text-dim); }
+
   /* Gema decorativa entre nodos del camino: pequeño hito visual que se
      "enciende" cuando ya superaste el nivel anterior. */
   .path-gem {
@@ -1050,7 +1065,7 @@
     border-bottom: 1px solid var(--border-soft);
   }
   .mini-term-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .mini-term-body { padding: 14px 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 14px; min-height: 90px; height: auto; }
+  .mini-term-body { padding: 14px 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 14px; min-height: 90px; height: auto; max-height: min(50vh, 420px); overflow-y: auto; }
   .mini-term-line { display: flex; gap: 6px; align-items: center; }
   .mini-term-prompt { color: var(--green); }
   .mini-term-input {
@@ -1249,6 +1264,71 @@
       transition-duration: 0.001ms !important;
     }
   }
+
+  /* ---- BUILD-PERMISSION (chmod): panel de switches rwx por rol ---- */
+  .bp-grid {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .bp-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .bp-row:last-child { border-bottom: none; }
+  .bp-role { width: 72px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--text-faint); }
+  .bp-switches { display: flex; gap: 8px; flex: 1; }
+  .bp-switch {
+    flex: 1; padding: 10px 0; text-align: center; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg-elevated);
+    color: var(--text-faint); font-weight: 700; font-size: 14px; cursor: pointer;
+    transition: all .12s ease; user-select: none;
+  }
+  .bp-switch:hover { border-color: var(--text-faint); }
+  .bp-switch.on { background: var(--green-deep); border-color: var(--green); color: var(--green); }
+  .bp-octal { width: 40px; flex-shrink: 0; text-align: center; font-weight: 700; color: var(--purple); font-size: 15px; }
+  .bp-preview {
+    margin-top: 4px; text-align: center; font-family: 'Courier New', monospace; font-size: 18px;
+    letter-spacing: 2px; color: var(--text); background: var(--bg-elevated);
+    border-radius: 10px; padding: 10px; border: 1px solid var(--border);
+  }
+  .bp-check-btn {
+    width: 100%; padding: 14px; margin-top: 14px; background: var(--green); color: #052A1C;
+    border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .bp-check-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ---- PREDICT-OUTPUT (chmod): construir la cadena de permisos resultante ---- */
+  .po-before {
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; margin-bottom: 10px; font-family: 'Courier New', monospace; font-size: 15px;
+  }
+  .po-before .po-cmd { color: var(--green); font-weight: 700; }
+  .po-before .po-str { color: var(--text-faint); letter-spacing: 1px; }
+  .po-arrow { text-align: center; color: var(--text-faint); font-size: 13px; margin: 6px 0 10px; }
+  .po-slots {
+    display: flex; justify-content: center; gap: 4px; margin-bottom: 14px;
+  }
+  .po-slot {
+    width: 30px; height: 40px; border-radius: 6px; border: 1.5px solid var(--border);
+    background: var(--bg-elevated); color: var(--text); font-family: 'Courier New', monospace;
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; user-select: none; transition: border-color .12s ease;
+  }
+  .po-slot.locked { color: var(--text-faint); cursor: default; border-style: dashed; }
+  .po-slot:not(.locked):hover { border-color: var(--text-faint); }
+  .po-slot.filled { border-color: var(--blue); background: var(--blue-deep); }
+  .po-slot.correct { border-color: var(--green); background: var(--green-deep); color: var(--green); }
+  .po-slot.incorrect { border-color: var(--red); background: var(--red-deep); color: var(--red); }
+  .po-legend { display: flex; justify-content: center; gap: 10px; margin-bottom: 14px; }
+  .po-legend-btn {
+    padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--bg-elevated); color: var(--text); font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .po-legend-btn:hover { border-color: var(--text-faint); }
+  .po-legend-btn.active { border-color: var(--blue); background: var(--blue-deep); }
+  .po-check-btn {
+    width: 100%; padding: 14px; background: var(--green); color: #052A1C;
+    border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .po-check-btn:disabled { opacity: 0.4; cursor: default; }
 </style>
 </head>
 <body>
@@ -4187,6 +4267,223 @@
     }
   ];
 
+  const chmodLessonSteps = [
+    // --- Tema 1: qué es chmod y para qué sirve ---
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'chmod: el comando que cambia permisos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chmod = change mode', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', text: 'cambia r, w, x de un archivo o carpeta', you: false }
+      ],
+      body: 'Ya sabes leer los permisos con ls -l. chmod (de "change mode") es el comando que te deja cambiarlos: darle o quitarle r, w o x a usuario, grupo u otros. Existen dos formas de decirle a chmod qué cambiar: la notación simbólica (con letras como u+x) y la notación numérica (con números como 755). Vamos a ver ambas, empezando por la simbólica.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Sintaxis básica: chmod [a quién][+/-/=][qué] archivo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'chmod u+x script.sh', you: true }
+      ],
+      body: 'La notación simbólica se lee de un tirón: primero a quién afecta (u = usuario, g = grupo, o = otros, a = todos), después qué operación hace (+ agrega, - quita, = deja exactamente así), y por último qué permiso (r, w o x). chmod u+x script.sh significa: "al usuario, agrégale el permiso de ejecución". El resto de permisos que ya tenía el archivo no se toca.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Qué hace exactamente chmod g+w notas.txt?',
+      context: 'Recuerda el orden: a quién, qué operación, qué permiso.',
+      options: ['Le quita el permiso de escritura al grupo', 'Le agrega el permiso de escritura al grupo', 'Le agrega escritura a todos: usuario, grupo y otros'],
+      correctIdx: 1,
+      explain: 'g+w se lee "al grupo, agrégale escritura". Solo afecta el permiso w del grupo; los demás permisos (r, x, y los de usuario y otros) quedan igual.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'despliegue.sh no tiene permiso de ejecución para el dueño. Tu carpeta también tiene despedida.txt y descarga.log. Escribe chmod u+x desp y presiona la tecla Tab de verdad para autocompletar',
+      context: 'Tres archivos empiezan distinto: despliegue.sh, despedida.txt y descarga.log. Con "desp" ya hay dos coincidencias (despliegue.sh y despedida.txt), así que Tab no completa hasta que agregues una letra más para desempatar.',
+      hint: 'Escribe chmod u+x despl y luego presiona la tecla Tab de tu teclado (no la escribas como texto).',
+      candidates: ['despliegue.sh', 'despedida.txt', 'descarga.log'],
+      prefixTemplate: 'chmod u+x {prefix}',
+      startPrefix: 'desp',
+      command: 'chmod u+x despliegue.sh',
+      output: 'permisos actualizados: -rw-r--r-- → -rwxr--r--',
+      successMsg: 'u+x agregó la x solo en el bloque del usuario. Grupo y otros no cambiaron, y Tab te ahorró escribir el nombre completo.'
+    },
+    // --- Tema 2: quitar permisos con - y usar = para fijar exactamente ---
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Quitar con -, y fijar exactamente con =',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chmod o-w archivo  → le quita w a otros', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chmod g=rx archivo → el grupo queda con EXACTAMENTE r y x', you: false }
+      ],
+      body: '- funciona igual que + pero al revés: quita el permiso indicado sin tocar los demás. = es distinto: no suma ni resta sobre lo que ya había, sino que fija el permiso final tal cual lo escribas. chmod g=rx significa "el grupo queda con r y x, y nada más" — si antes tenía w, se lo quita; si no tenía r o x, se los pone.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Un archivo tiene rw-rw-rw-. Ejecutas chmod o=r archivo. ¿Cómo queda el bloque de "otros"?',
+      context: 'o=r fija el resultado final para otros, sin importar lo que tenía antes.',
+      options: ['rw- (igual que antes)', 'r-- (solo lectura)', '--- (sin ningún permiso)'],
+      correctIdx: 1,
+      explain: 'o=r fija el permiso de "otros" en exactamente r--. Tenía w antes, pero = no suma sobre lo anterior: lo reemplaza por lo que escribas.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres quitarle el permiso de escritura a "otros" sobre configuracion.env. Ordena las piezas.',
+      context: 'Es la operación de quitar (-), aplicada solo a otros (o), sobre el permiso w.',
+      chips: ['chmod', 'o-w', 'configuracion.env', 'u-w', 'g+w'],
+      correctOrder: ['chmod', 'o-w', 'configuracion.env'],
+      explain: 'chmod o-w configuracion.env le quita w únicamente al bloque de "otros". El resto de permisos, incluidos los de usuario y grupo, quedan intactos.'
+    },
+    // --- Tema 3: notación numérica (octal) ---
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'La notación numérica: cada permiso vale un número',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', text: 'r = 4 · w = 2 · x = 1', you: false }
+      ],
+      body: 'La notación simbólica es precisa pero verbosa. La numérica (u octal) es más rápida: a cada permiso se le asigna un valor fijo — r vale 4, w vale 2, x vale 1 — y para un rol se suman los permisos activos. Un rol con r, w y x da 4+2+1 = 7. Un rol con solo r y x da 4+1 = 5. Un rol sin ningún permiso da 0.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Qué número representa un rol con permisos r y w, pero sin x?',
+      context: 'r vale 4, w vale 2, x vale 1. Suma solo los que están activos.',
+      options: ['4', '5', '6'],
+      correctIdx: 2,
+      explain: 'r (4) + w (2) = 6. La x no está activa, así que no se suma su 1. rw- equivale siempre al número 6.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Tres dígitos: usuario, grupo, otros',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chmod 754 archivo', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'rwx (7) r-x (5) r-- (4)', you: false }
+      ],
+      body: 'chmod con números siempre usa tres dígitos seguidos: el primero para el usuario, el segundo para el grupo, el tercero para otros. chmod 754 archivo deja al usuario con rwx (7), al grupo con r-x (5) y a otros con r-- (4). A diferencia de + o -, un chmod numérico siempre fija los tres bloques completos de una vez, como si fuera un = para los tres roles a la vez.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'chmod 640 archivo. ¿Qué permisos tiene "otros"?',
+      context: 'El tercer dígito es siempre el de "otros". 0 significa ningún permiso activo.',
+      options: ['r-- (solo lectura)', '--- (ningún permiso)', 'rw- (lectura y escritura)'],
+      correctIdx: 1,
+      explain: 'El tercer dígito es 0, y 0 = sin ningún permiso activo (ni r, ni w, ni x). "Otros" queda con ---.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'Deja despliegue.sh con rwx para el usuario, r-x para el grupo y sin ningún permiso para otros. Tu carpeta también tiene desplazar.sh. Escribe chmod 750 desp y presiona Tab',
+      context: 'Convierte cada bloque a su número: rwx=7, r-x=5, ---=0. despliegue.sh y desplazar.sh comparten el prefijo "desp", así que necesitas una letra más para que Tab complete uno solo.',
+      hint: 'Escribe chmod 750 despl y luego presiona la tecla Tab de tu teclado.',
+      candidates: ['despliegue.sh', 'desplazar.sh'],
+      prefixTemplate: 'chmod 750 {prefix}',
+      startPrefix: 'desp',
+      command: 'chmod 750 despliegue.sh',
+      output: 'permisos actualizados: rwxr-x---',
+      successMsg: '7 (rwx) para el usuario, 5 (r-x) para el grupo, 0 (---) para otros. Tab evitó que escribieras mal el nombre del archivo.'
+    },
+    // --- Tema 4: combinaciones numéricas comunes ---
+    {
+      type: 'concept',
+      kicker: 'En la práctica',
+      prompt: 'Combinaciones numéricas que verás todo el tiempo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '755 → programas y carpetas de trabajo', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '644 → documentos normales', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '700 → privado, solo el dueño', you: false }
+      ],
+      body: 'Tres combinaciones aparecen constantemente. 755 (rwxr-xr-x) es típica de scripts y carpetas: el dueño controla todo, el resto puede usar pero no modificar. 644 (rw-r--r--) es la de documentos normales: todos leen, solo el dueño escribe. 700 (rwx------) es completamente privada: nadie más que el dueño puede hacer absolutamente nada con el archivo.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Tienes un archivo con datos personales y quieres que solo tú (el dueño) puedas leerlo, escribirlo y ejecutarlo, sin que nadie más tenga ningún acceso. ¿Qué número usas?',
+      context: 'Piensa en qué dígito representa "todo para el dueño" y cuál representa "nada para el resto".',
+      options: ['777', '700', '744'],
+      correctIdx: 1,
+      explain: '700 da rwx (7) al dueño y --- (0) tanto al grupo como a otros. Nadie más que tú puede leer, escribir ni ejecutar ese archivo.'
+    },
+    {
+      type: 'build-permission',
+      kicker: 'Constrúyelo',
+      prompt: 'Configura los permisos para que quede como 754: rwx para el usuario, r-x para el grupo, r-- para otros',
+      context: 'Activa o desactiva cada switch de r, w y x en la fila de cada rol. El número octal de cada fila se calcula solo.',
+      correctOctal: '754',
+      explain: '754 = rwx (7) para el usuario, r-x (5) para el grupo, r-- (4) para otros. Activar y desactivar switches es otra forma de llegar al mismo resultado que escribir el número directamente.'
+    },
+    // --- Tema 5: chmod -R (recursivo) ---
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '-R: aplicar el cambio a toda una carpeta de una vez',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>', text: 'chmod -R 644 proyectos/', you: true }
+      ],
+      body: 'Por defecto, chmod solo cambia el archivo o carpeta que le indiques, sin tocar lo que hay dentro. Con la opción -R (recursivo), el cambio se aplica a la carpeta Y a todo su contenido: subcarpetas y archivos, sin importar cuántos niveles de profundidad tengan. Es potente, pero también peligrosa: aplicarla sin pensar puede dejar carpetas sin el permiso x que necesitan para poder entrar en ellas.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas chmod -R 644 proyectos/, y proyectos/ contiene subcarpetas. ¿Qué problema puede causar esto?',
+      context: '644 no incluye el permiso x. Piensa en qué permiso necesita una carpeta para poder "entrarse" con cd.',
+      options: ['Ninguno, 644 es seguro para carpetas', 'Las subcarpetas quedan sin x, y nadie podrá entrar a ellas con cd', 'Los archivos de adentro se vuelven ejecutables'],
+      correctIdx: 1,
+      explain: '644 no tiene x en ningún bloque. Al aplicarlo recursivamente, las subcarpetas pierden el permiso de "entrar" (x), y ni siquiera el dueño podrá hacer cd hacia ellas hasta corregirlo.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'Quieres que todo dentro de la carpeta scripts tenga permiso de ejecución para el grupo, de una sola vez. También existe una carpeta script-viejo. Escribe chmod -R g+x scri y presiona Tab',
+      context: 'Necesitas la opción recursiva de chmod (-R), más la operación de agregar el permiso (g+x). scripts y script-viejo comparten el prefijo "scri", así que Tab pedirá una letra más para desempatar.',
+      hint: 'Escribe chmod -R g+x script y luego presiona la tecla Tab de tu teclado.',
+      candidates: ['scripts', 'script-viejo'],
+      prefixTemplate: 'chmod -R g+x {prefix}',
+      startPrefix: 'scri',
+      command: 'chmod -R g+x scripts',
+      output: 'permisos actualizados recursivamente en scripts/ y todo su contenido',
+      successMsg: '-R hizo que g+x se aplicara a la carpeta scripts Y a todo lo que contiene, no solo a la carpeta en sí. Tab te ahorró terminar de escribir el nombre.'
+    },
+    // --- Tema 6: predecir el resultado (aplicación combinada) ---
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'Simbólica vs. numérica: dos caminos al mismo lugar',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'u+x, g-w, o=r → cambios puntuales', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '755, 644, 700 → fijar los tres bloques de una vez', you: false }
+      ],
+      body: 'La notación simbólica (u+x, g-w, o=r) es ideal cuando quieres tocar un solo permiso sin afectar el resto. La numérica (755, 644, 700) es más rápida cuando quieres fijar los tres bloques completos de una vez, como cuando configuras un archivo recién creado. r=4, w=2, x=1, y se suman por bloque. -R aplica cualquiera de las dos formas a una carpeta completa, con cuidado de no quitar la x que las subcarpetas necesitan.'
+    },
+    {
+      type: 'predict-output',
+      kicker: 'Predice el resultado',
+      prompt: 'Un archivo tiene permisos rw-r--r--. Se ejecuta chmod u+x,o-r archivo. Construye la cadena resultante',
+      context: 'Dos cambios en un solo comando, separados por coma: al usuario se le agrega x; a otros se le quita r. El grupo no se toca.',
+      command: 'chmod u+x,o-r archivo',
+      before: 'rw-r--r--',
+      correctAfter: 'rwxr-----',
+      explain: 'u+x agrega x al usuario: rw- pasa a rwx. o-r quita r a otros: r-- pasa a ---. El grupo no aparece en el comando, así que r-- queda exactamente igual.'
+    },
+    {
+      type: 'predict-output',
+      kicker: 'Predice el resultado',
+      prompt: 'Una carpeta tiene permisos rwxrwxrwx (777). Se ejecuta chmod 750 carpeta/. Construye la cadena resultante',
+      context: 'chmod numérico fija los tres bloques completos, sin importar lo que tenían antes.',
+      command: 'chmod 750 carpeta/',
+      before: 'rwxrwxrwx',
+      correctAfter: 'rwxr-x---',
+      explain: '750 fija: usuario en 7 (rwx), grupo en 5 (r-x), otros en 0 (---). No importa que antes todos tuvieran acceso total: el numérico reemplaza los tres bloques de una sola vez.'
+    }
+  ];
+
   const unitData = {
     1: {
       title: 'Fundamentos', icon: 'linux', subtitle: 'Unidad 1 · Nivel 1',
@@ -4196,7 +4493,7 @@
         { title: 'Navegación', sub: 'pwd, ls, cd', status: 'active', icon: 'terminal', exercises: navegacionLessonSteps },
         { title: 'Archivos', sub: 'crear y organizar', status: 'active', icon: 'folder', exercises: archivosLessonSteps },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoLessonSteps },
-        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', exercises: desafioLessonSteps },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true, intro: 'Sin pistas paso a paso: combina todo lo que aprendiste en esta unidad para resolver una tarea real, con solo el objetivo final como guía.', exercises: desafioLessonSteps },
       ]
     },
     2: {
@@ -4207,7 +4504,7 @@
         { title: 'Buscar texto', sub: 'grep y expresiones básicas', status: 'active', icon: 'edit', exercises: buscarTextoLessonSteps },
         { title: 'Historial y atajos', sub: 'history, Ctrl+R, autocompletado', status: 'active', icon: 'keyboard', exercises: historialLessonSteps },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoTerminalLessonSteps },
-        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', exercises: desafioTerminalLessonSteps },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true, intro: 'Una sola sesión de terminal, sin instrucciones sueltas: encadena los comandos que aprendiste para completar una tarea real de principio a fin.', exercises: desafioTerminalLessonSteps },
       ]
     },
     3: {
@@ -4215,9 +4512,10 @@
       lessons: [
         { title: 'Propietarios y grupos', sub: 'usuario, grupo, otros', status: 'active', icon: 'user', exercises: propietariosLessonSteps },
         { title: 'Permisos rwx', sub: 'lectura, escritura, ejecución', status: 'active', icon: 'lock', exercises: permisosLessonSteps },
-        { title: 'chmod', sub: 'notación numérica y simbólica', status: 'active', icon: 'folder' },
+        { title: 'chmod', sub: 'notación numérica y simbólica', status: 'active', icon: 'folder', exercises: chmodLessonSteps },
         { title: 'chown y chgrp', sub: 'cambiar propietario y grupo', status: 'active', icon: 'refresh' },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
       ]
     },
     4: {
@@ -4228,6 +4526,7 @@
         { title: 'Segundo plano', sub: '&, jobs, fg, bg', status: 'active', icon: 'loop' },
         { title: 'Terminar procesos', sub: 'kill y las señales comunes', status: 'active', icon: 'stop' },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
       ]
     },
     5: {
@@ -4238,6 +4537,7 @@
         { title: 'curl y wget', sub: 'peticiones desde la terminal', status: 'active', icon: 'download' },
         { title: 'ssh básico', sub: 'conectarte a otra máquina', status: 'active', icon: 'key' },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
       ]
     }
   };
@@ -4552,6 +4852,51 @@
   // según la unidad a la que pertenece, con un banner separador cada
   // vez que se cruza a la siguiente unidad. Tocar un nodo entra
   // directo a esa lección, sin pasar por el sheet ni por screen-unit.
+  // Construye el <button> de un nodo de lección, usado tanto por el
+  // camino "seguido" (todas las unidades en un solo recorrido) como
+  // por el camino de lecciones dentro de una unidad. Si la lección es
+  // el "Desafío final" de su unidad (lesson.final === true), se pinta
+  // como una tarjeta grande y centrada en vez del hexágono zigzagueante
+  // normal, con una pequeña insignia y (si existe) una frase de
+  // introducción de lesson.intro.
+  function createLessonNode(lesson, zigzagSide, colorClass, onClick) {
+    const node = document.createElement('button');
+    const isFinal = !!lesson.final;
+    node.className = isFinal ? 'level-node level-node-final' : 'level-node';
+    if (!isFinal) node.setAttribute('data-zigzag', zigzagSide);
+    node.setAttribute('aria-label', lesson.title + (lesson.status === 'locked' ? ' (bloqueada)' : ''));
+    if (lesson.status === 'locked') node.setAttribute('tabindex', '-1');
+
+    const shapeClass = lesson.status === 'active' ? 'active' : (lesson.status === 'done' ? 'done' : 'locked');
+    const labelClass = lesson.status === 'active' ? 'active-label' : '';
+    const shapeColorClass = lesson.status === 'locked' ? '' : colorClass;
+
+    if (isFinal) {
+      node.innerHTML = `
+        <div class="node-shape final-node-shape ${shapeClass} ${shapeColorClass}">
+          <div class="node-shape-body">
+            <div class="final-badge">${lesson.status === 'locked' ? ICONS.lock : ICONS.trophy}</div>
+            <div class="final-node-title">${lesson.title}</div>
+            ${lesson.intro ? '<div class="final-node-intro">' + lesson.intro + '</div>' : ''}
+          </div>
+        </div>
+      `;
+    } else {
+      node.innerHTML = `
+        ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + shapeColorClass + '"></span>' : ''}
+        <div class="node-label ${labelClass}">${lesson.title}</div>
+        <div class="node-shape ${shapeClass} ${shapeColorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
+      `;
+    }
+
+    node.onclick = () => {
+      if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
+      onClick();
+    };
+
+    return node;
+  }
+
   function renderMapFlattened() {
     updateProgressBar();
 
@@ -4586,26 +4931,11 @@
     orderedItems.forEach((item, i) => {
       const { lesson, unitId, unitColor, unitTitle, lessonIdx } = item;
 
-      const node = document.createElement('button');
-      node.className = 'level-node';
-      node.setAttribute('data-zigzag', i % 2 === 0 ? 'left' : 'right');
-      node.setAttribute('aria-label', lesson.title + (lesson.status === 'locked' ? ' (bloqueada)' : ''));
-      if (lesson.status === 'locked') node.setAttribute('tabindex', '-1');
-
-      const shapeClass = lesson.status === 'active' ? 'active' : (lesson.status === 'done' ? 'done' : 'locked');
-      const labelClass = lesson.status === 'active' ? 'active-label' : '';
-      const colorClass = lesson.status === 'locked' ? '' : ('c-' + unitColor);
-
-      node.innerHTML = `
-        ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
-        <div class="node-label ${labelClass}">${lesson.title}</div>
-        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
-      `;
-      node.onclick = () => {
-        if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
+      const colorClass = 'c-' + unitColor;
+      const node = createLessonNode(lesson, i % 2 === 0 ? 'left' : 'right', colorClass, () => {
         state.currentUnit = unitId;
         startLesson(lessonIdx);
-      };
+      });
       container.appendChild(node);
 
       // Banner de unidad: el contenedor usa column-reverse, así que lo
@@ -4815,25 +5145,7 @@
 
     orderedLessons.forEach((lesson, i) => {
       const originalIdx = total - 1 - i;
-      const node = document.createElement('button');
-      node.className = 'level-node';
-      node.setAttribute('data-zigzag', i % 2 === 0 ? 'left' : 'right');
-      node.setAttribute('aria-label', lesson.title + (lesson.status === 'locked' ? ' (bloqueada)' : ''));
-      if (lesson.status === 'locked') node.setAttribute('tabindex', '-1');
-
-      const shapeClass = lesson.status === 'active' ? 'active' : (lesson.status === 'done' ? 'done' : 'locked');
-      const labelClass = lesson.status === 'active' ? 'active-label' : '';
-      const colorClass = lesson.status === 'locked' ? '' : unitColorClass;
-
-      node.innerHTML = `
-        ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
-        <div class="node-label ${labelClass}">${lesson.title}</div>
-        <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
-      `;
-      node.onclick = () => {
-        if (lesson.status === 'locked') { shakeLocked(node.querySelector('.node-shape')); return; }
-        startLesson(originalIdx);
-      };
+      const node = createLessonNode(lesson, i % 2 === 0 ? 'left' : 'right', unitColorClass, () => startLesson(originalIdx));
       container.appendChild(node);
 
       const isLast = i === orderedLessons.length - 1;
@@ -5094,6 +5406,10 @@
       });
     } else if (ex.type === 'multi-step-terminal') {
       renderMultiStepTerminal(ex);
+    } else if (ex.type === 'build-permission') {
+      renderBuildPermission(ex);
+    } else if (ex.type === 'predict-output') {
+      renderPredictOutput(ex);
     } else if (ex.type === 'autocomplete-command') {
       body.innerHTML = `
         <div class="exercise-kicker">${ex.kicker}</div>
@@ -5120,9 +5436,11 @@
       const acOutput = document.getElementById('autocomplete-output');
       const acHint = document.getElementById('autocomplete-hint');
       const prefixTpl = ex.prefixTemplate || '{prefix}';
-      acInput.value = prefixTpl.replace('{prefix}', ex.startPrefix || '');
+      // El input arranca vacío: nadie tiene el comando ya escrito de antemano.
+      // Tab es una ayuda opcional, no un requisito — quien prefiera escribir
+      // el comando completo a mano puede hacerlo y funciona igual.
+      acInput.value = '';
       acInput.focus();
-      setTimeout(() => acInput.setSelectionRange(acInput.value.length, acInput.value.length), 0);
       let acAttempts = 0;
       let acHintLevel = 0;
       let acLastTabPrefix = null;
@@ -5130,13 +5448,16 @@
         if (e.key === 'Tab') {
           e.preventDefault();
           const raw = acInput.value;
-          const staticPart = prefixTpl.split('{prefix}')[0] || '';
-          const typedPrefix = raw.startsWith(staticPart) ? raw.slice(staticPart.length) : raw;
-          const trimmedPrefix = typedPrefix.trim();
+          // Autocompleta sobre la última "palabra" que el usuario ya escribió,
+          // sin importar si escribió el prefijo sugerido u otra cosa distinta.
+          const lastSpaceIdx = raw.lastIndexOf(' ');
+          const staticPart = lastSpaceIdx >= 0 ? raw.slice(0, lastSpaceIdx + 1) : '';
+          const typedWord = lastSpaceIdx >= 0 ? raw.slice(lastSpaceIdx + 1) : raw;
+          const trimmedPrefix = typedWord.trim();
           if (!trimmedPrefix) return;
           const matches = ex.candidates.filter(c => c.toLowerCase().startsWith(trimmedPrefix.toLowerCase()));
           if (matches.length === 1) {
-            acInput.value = prefixTpl.replace('{prefix}', matches[0]);
+            acInput.value = staticPart + matches[0];
             acOutput.classList.remove('error');
             acOutput.textContent = '';
             acLastTabPrefix = null;
@@ -5204,6 +5525,11 @@
   let msAttempts = 0;
   let msHintLevel = 0;
 
+  function scrollMsTermToBottom() {
+    const termBody = document.getElementById('ms-term-body');
+    if (termBody) termBody.scrollTop = termBody.scrollHeight;
+  }
+
   function renderMultiStepTerminal(ex) {
     msHistory = [];
     msStepIdx = 0;
@@ -5222,7 +5548,7 @@
           <div class="mini-term-dot" style="background:#FEBC2E"></div>
           <div class="mini-term-dot" style="background:#28C840"></div>
         </div>
-        <div class="mini-term-body">
+        <div class="mini-term-body" id="ms-term-body">
           <div id="ms-history"></div>
           <div class="mini-term-step-goal" id="ms-step-goal"></div>
           <div class="mini-term-line">
@@ -5266,6 +5592,7 @@
     input.value = '';
     input.disabled = false;
     input.focus();
+    requestAnimationFrame(scrollMsTermToBottom);
 
     let msLastTabPrefix = null;
 
@@ -5308,6 +5635,7 @@
       if (validCommands.includes(value)) {
         output.classList.add('success');
         output.textContent = step.output;
+        scrollMsTermToBottom();
         state.exerciseXpEarned += 5;
         input.disabled = true;
         input.removeEventListener('keydown', handler);
@@ -5324,6 +5652,7 @@
           finalMsg.textContent = ex.successMsg;
           document.getElementById('ms-history').appendChild(finalMsg);
           document.getElementById('ms-continue-btn').classList.add('show');
+          scrollMsTermToBottom();
         } else {
           setTimeout(() => {
             msStepIdx += 1;
@@ -5360,6 +5689,7 @@
           hintEl.classList.add('show', 'level-3');
           hintEl.innerHTML = 'Pista: el comando empieza con "<strong>' + step.command.charAt(0) + '</strong>"';
         }
+        scrollMsTermToBottom();
         input.value = '';
 
         if (state.hearts === 0) {
@@ -5371,6 +5701,126 @@
     }
 
     input.addEventListener('keydown', handler);
+  }
+
+  // ---------- BUILD-PERMISSION (chmod): panel de switches rwx por rol ----------
+  // A diferencia de 'choice' u 'order', aquí no se elige entre opciones ya armadas:
+  // el usuario construye el permiso desde cero, activando/desactivando cada uno de
+  // los 9 switches (r/w/x para usuario, grupo y otros) hasta lograr el objetivo pedido.
+  let bpState = null; // { u: {r,w,x}, g: {r,w,x}, o: {r,w,x} }
+
+  function bpOctalForRole(role) {
+    return (bpState[role].r ? 4 : 0) + (bpState[role].w ? 2 : 0) + (bpState[role].x ? 1 : 0);
+  }
+
+  function bpSymbolicString() {
+    return ['u', 'g', 'o'].map(role =>
+      (bpState[role].r ? 'r' : '-') + (bpState[role].w ? 'w' : '-') + (bpState[role].x ? 'x' : '-')
+    ).join('');
+  }
+
+  function renderBuildPermission(ex) {
+    bpState = { u: { r: false, w: false, x: false }, g: { r: false, w: false, x: false }, o: { r: false, w: false, x: false } };
+    const body = document.getElementById('lesson-body');
+    const roleLabels = { u: 'Usuario', g: 'Grupo', o: 'Otros' };
+    body.innerHTML = `
+      <div class="exercise-kicker">${ex.kicker}</div>
+      <div class="exercise-prompt">${ex.prompt}</div>
+      <div class="exercise-context">${ex.context}</div>
+      <div class="bp-grid" id="bp-grid">
+        ${['u', 'g', 'o'].map(role => `
+          <div class="bp-row">
+            <div class="bp-role">${roleLabels[role]}</div>
+            <div class="bp-switches">
+              <div class="bp-switch" data-role="${role}" data-perm="r">r</div>
+              <div class="bp-switch" data-role="${role}" data-perm="w">w</div>
+              <div class="bp-switch" data-role="${role}" data-perm="x">x</div>
+            </div>
+            <div class="bp-octal" id="bp-octal-${role}">0</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="bp-preview" id="bp-preview">---------  ·  chmod 000</div>
+      <button class="bp-check-btn" id="bp-check-btn">Comprobar</button>
+    `;
+    document.querySelectorAll('.bp-switch').forEach(sw => {
+      sw.onclick = () => {
+        const role = sw.dataset.role, perm = sw.dataset.perm;
+        bpState[role][perm] = !bpState[role][perm];
+        sw.classList.toggle('on', bpState[role][perm]);
+        document.getElementById('bp-octal-' + role).textContent = bpOctalForRole(role);
+        const octalFull = ['u', 'g', 'o'].map(bpOctalForRole).join('');
+        document.getElementById('bp-preview').textContent = bpSymbolicString() + '  ·  chmod ' + octalFull;
+      };
+    });
+    document.getElementById('bp-check-btn').onclick = () => {
+      const octalFull = ['u', 'g', 'o'].map(bpOctalForRole).join('');
+      const correct = octalFull === ex.correctOctal;
+      document.getElementById('bp-check-btn').disabled = true;
+      document.querySelectorAll('.bp-switch').forEach(sw => sw.style.pointerEvents = 'none');
+      showFeedback(correct, ex.explain);
+    };
+  }
+
+  // ---------- PREDICT-OUTPUT (chmod): construir la cadena de permisos resultante ----------
+  // A diferencia de 'type-command' (que pide escribir un comando) aquí el comando ya
+  // se muestra ejecutado: el usuario debe predecir su efecto, construyendo carácter por
+  // carácter la nueva cadena de permisos a partir del estado "antes" y el chmod aplicado.
+  let poFilled = []; // array de 9 posiciones, null o 'r'/'w'/'x'/'-'
+  let poActiveSlot = null;
+  let poActiveChar = null;
+
+  function renderPredictOutput(ex) {
+    poFilled = ex.before.split('').map((ch, i) => ex.lockedMask && ex.lockedMask[i] ? ch : null);
+    poActiveSlot = null;
+    const body = document.getElementById('lesson-body');
+    body.innerHTML = `
+      <div class="exercise-kicker">${ex.kicker}</div>
+      <div class="exercise-prompt">${ex.prompt}</div>
+      <div class="exercise-context">${ex.context}</div>
+      <div class="po-before"><span class="po-cmd">${ex.command}</span></div>
+      <div class="po-before"><span class="po-str">antes: ${ex.before}</span></div>
+      <div class="po-arrow">↓ construye la cadena resultante, carácter por carácter ↓</div>
+      <div class="po-slots" id="po-slots">
+        ${poFilled.map((v, i) => `<div class="po-slot ${v !== null ? 'locked filled' : ''}" data-idx="${i}">${v !== null ? v : ''}</div>`).join('')}
+      </div>
+      <div class="po-legend">
+        <div class="po-legend-btn" data-char="r">r</div>
+        <div class="po-legend-btn" data-char="w">w</div>
+        <div class="po-legend-btn" data-char="x">x</div>
+        <div class="po-legend-btn" data-char="-">-</div>
+      </div>
+      <button class="po-check-btn" id="po-check-btn">Comprobar</button>
+    `;
+    document.querySelectorAll('.po-legend-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.po-legend-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        poActiveChar = btn.dataset.char;
+      };
+    });
+    document.querySelectorAll('.po-slot').forEach(slot => {
+      if (slot.classList.contains('locked')) return;
+      slot.onclick = () => {
+        if (!poActiveChar) return;
+        const idx = Number(slot.dataset.idx);
+        poFilled[idx] = poActiveChar;
+        slot.textContent = poActiveChar;
+        slot.classList.add('filled');
+      };
+    });
+    document.getElementById('po-check-btn').onclick = () => {
+      if (poFilled.some(v => v === null)) return;
+      const userStr = poFilled.join('');
+      const correct = userStr === ex.correctAfter;
+      document.querySelectorAll('.po-slot').forEach((slot, i) => {
+        slot.classList.add(poFilled[i] === ex.correctAfter[i] ? 'correct' : 'incorrect');
+        slot.style.pointerEvents = 'none';
+      });
+      document.getElementById('po-check-btn').disabled = true;
+      document.querySelectorAll('.po-legend-btn').forEach(b => b.style.pointerEvents = 'none');
+      showFeedback(correct, ex.explain);
+    };
   }
 
   function selectChoice(idx, btn) {
