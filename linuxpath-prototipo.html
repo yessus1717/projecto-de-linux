@@ -1065,7 +1065,7 @@
     border-bottom: 1px solid var(--border-soft);
   }
   .mini-term-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .mini-term-body { padding: 14px 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 14px; min-height: 90px; height: auto; max-height: min(50vh, 420px); overflow-y: auto; }
+  .mini-term-body { padding: 14px 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 14px; min-height: 90px; height: auto; max-height: min(60vh, 520px); overflow-y: auto; scroll-behavior: smooth; }
   .mini-term-line { display: flex; gap: 6px; align-items: center; }
   .mini-term-prompt { color: var(--green); }
   .mini-term-input {
@@ -1559,6 +1559,7 @@
       context: '"whoami" significa "quién soy yo". Te dice con qué usuario iniciaste sesión en el sistema.',
       hint: 'Es el comando que responde «¿con qué usuario inicié sesión?».',
       command: 'whoami',
+      tabCandidates: ['whoami'],
       output: 'user',
       successMsg: '¡Eso es! Ya sabes quién eres para el sistema.'
     },
@@ -1579,6 +1580,7 @@
       context: '"pwd" te dice en qué carpeta estás parado ahora mismo.',
       hint: 'Te dice, sin moverte, en qué carpeta estás parado ahora mismo.',
       command: 'pwd',
+      tabCandidates: ['pwd'],
       output: '/home/user',
       successMsg: 'Perfecto. Ahora siempre podrás saber dónde estás parado.'
     },
@@ -1599,6 +1601,7 @@
       context: '"ls" lista lo que hay en tu carpeta actual.',
       hint: 'Muestra qué hay dentro de la carpeta en la que estás.',
       command: 'ls',
+      tabCandidates: ['ls'],
       output: 'documentos  fotos  proyectos',
       successMsg: '¡Así es! Ya viste tu primera carpeta con archivos dentro.'
     },
@@ -1618,6 +1621,7 @@
       prompt: 'Escribe mkdir proyectos y presiona Enter',
       context: '"mkdir" significa "make directory" (crear directorio). Le sigue el nombre que quieras ponerle.',
       command: 'mkdir proyectos',
+      tabCandidates: ['mkdir', 'proyectos'],
       output: "Carpeta 'proyectos' creada.",
       successMsg: 'Bien hecho. mkdir es el comando que usarás cada vez que quieras organizar cosas nuevas.'
     },
@@ -1637,6 +1641,7 @@
       prompt: 'Escribe cd proyectos y presiona Enter',
       context: '"cd" te mueve dentro de la carpeta que le indiques.',
       command: 'cd proyectos',
+      tabCandidates: ['cd', 'proyectos'],
       output: '(ahora estás dentro de "proyectos")',
       successMsg: '¡Te moviste de carpeta! cd es como abrir una puerta y entrar.'
     },
@@ -1656,6 +1661,7 @@
       prompt: 'Escribe cd .. y presiona Enter',
       context: 'Los dos puntos ".." te llevan un nivel hacia arriba.',
       command: 'cd ..',
+      tabCandidates: ['cd', '..'],
       output: '(volviste a la carpeta anterior)',
       successMsg: 'Con cd .. siempre puedes subir un nivel, las veces que necesites.'
     },
@@ -1675,6 +1681,7 @@
       prompt: 'Escribe touch notas.txt y presiona Enter',
       context: '"touch" crea un archivo vacío con el nombre que le des. Es el punto de partida antes de escribir algo en él.',
       command: 'touch notas.txt',
+      tabCandidates: ['touch', 'notas.txt'],
       output: "Archivo 'notas.txt' creado (vacío).",
       successMsg: 'Ya existe el archivo. Todavía está vacío, pero ya es tuyo.'
     },
@@ -1694,6 +1701,7 @@
       prompt: 'Escribe echo hola y presiona Enter',
       context: '"echo" repite en pantalla el texto que le des.',
       command: 'echo hola',
+      tabCandidates: ['echo', 'hola'],
       output: 'hola',
       successMsg: 'Así de simple: echo repite exactamente lo que escribes después.'
     },
@@ -1713,6 +1721,7 @@
       prompt: 'Escribe cat notas.txt y presiona Enter',
       context: '"cat" muestra el contenido de un archivo directamente en la terminal.',
       command: 'cat notas.txt',
+      tabCandidates: ['cat', 'notas.txt'],
       output: '(el archivo está vacío, por eso no se ve nada más)',
       successMsg: 'Si notas.txt tuviera texto dentro, cat te lo mostraría aquí mismo.'
     },
@@ -1732,6 +1741,7 @@
       prompt: 'Escribe cp notas.txt copia.txt y presiona Enter',
       context: '"cp" copia un archivo dejando el original intacto.',
       command: 'cp notas.txt copia.txt',
+      tabCandidates: ['cp', 'notas.txt', 'copia.txt'],
       output: 'Copiado: copia.txt',
       successMsg: 'notas.txt sigue existiendo intacto, y ahora también tienes copia.txt.'
     },
@@ -1751,6 +1761,7 @@
       prompt: 'Escribe mv copia.txt archivo.txt y presiona Enter',
       context: '"mv" mueve o renombra un archivo, según cómo lo uses.',
       command: 'mv copia.txt archivo.txt',
+      tabCandidates: ['mv', 'copia.txt', 'archivo.txt'],
       output: 'copia.txt ahora se llama archivo.txt',
       successMsg: 'mv sirve tanto para mover como para renombrar — es el mismo comando para las dos cosas.'
     },
@@ -1770,6 +1781,7 @@
       prompt: 'Escribe rm archivo.txt y presiona Enter',
       context: '"rm" borra un archivo de forma permanente, sin papelera.',
       command: 'rm archivo.txt',
+      tabCandidates: ['rm', 'archivo.txt'],
       output: 'archivo.txt eliminado.',
       successMsg: 'Listo. Por eso siempre conviene pensarlo dos veces antes de usar rm.'
     },
@@ -1789,6 +1801,7 @@
       prompt: 'Escribe clear y presiona Enter',
       context: '"clear" borra todo el texto visible en la terminal, sin tocar tus archivos.',
       command: 'clear',
+      tabCandidates: ['clear'],
       output: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4L10 14"/><path d="M4 20l3.5-3.5a3 3 0 014.2 0L13 18"/><path d="M9 15l-5 5"/><path d="M13 5l6 6"/></svg> (la pantalla ahora está limpia)',
       successMsg: 'Nada que temer: clear solo ordena tu vista, tus archivos siguen intactos.'
     },
@@ -1808,6 +1821,7 @@
       prompt: 'Escribe man ls y presiona Enter',
       context: '"man" te muestra las instrucciones de cualquier comando.',
       command: 'man ls',
+      tabCandidates: ['man', 'ls'],
       output: 'LS(1) — Lista el contenido de un directorio. Uso: ls [opciones] [ruta]',
       successMsg: 'Cuando olvides cómo se usa un comando, man siempre tiene la respuesta.'
     },
@@ -1827,6 +1841,7 @@
       prompt: 'Escribe date y presiona Enter',
       context: '"date" muestra la fecha y hora actuales del sistema.',
       command: 'date',
+      tabCandidates: ['date'],
       output: 'sáb 30 ago 2026 12:00:00',
       successMsg: 'Corto y directo: date siempre te dice qué día es.'
     },
@@ -1846,6 +1861,7 @@
       prompt: 'Escribe history y presiona Enter',
       context: '"history" muestra la lista de comandos que has escrito antes.',
       command: 'history',
+      tabCandidates: ['history'],
       output: '1  whoami\n2  pwd\n3  ls\n4  mkdir proyectos\n5  cd proyectos\n...',
       successMsg: '¡Completaste todos los comandos fundamentales! Ya tienes las bases para moverte en cualquier terminal Linux.'
     }
@@ -1868,6 +1884,7 @@
       prompt: 'Escribe whoami y presiona Enter',
       context: 'Un buen hábito al entrar a una terminal nueva es confirmar con qué usuario estás trabajando.',
       command: 'whoami',
+      tabCandidates: ['whoami'],
       output: 'user',
       successMsg: 'Siempre es buena idea saber con qué usuario estás operando.'
     },
@@ -1953,6 +1970,7 @@
       prompt: 'Escribe clear y presiona Enter',
       context: 'Cuando la pantalla se llena de texto, puedes limpiarla sin perder ningún archivo real.',
       command: 'clear',
+      tabCandidates: ['clear'],
       output: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4L10 14"/><path d="M4 20l3.5-3.5a3 3 0 014.2 0L13 18"/><path d="M9 15l-5 5"/><path d="M13 5l6 6"/></svg> (la pantalla ahora está limpia)',
       successMsg: 'clear solo limpia la vista, nunca borra archivos.'
     },
@@ -2075,6 +2093,7 @@
       prompt: 'Escribe history y presiona Enter',
       context: 'history te muestra la lista completa de comandos que has escrito en esta sesión, numerados.',
       command: 'history',
+      tabCandidates: ['history'],
       output: '1  whoami\n2  clear\n3  man ls',
       successMsg: 'Con history puedes revisar (y hasta reutilizar) cualquier comando que hayas escrito antes.'
     }
@@ -2097,6 +2116,7 @@
       prompt: 'Escribe pwd y presiona Enter',
       context: 'Antes de movernos, confirmemos dónde estás parado ahora mismo.',
       command: 'pwd',
+      tabCandidates: ['pwd'],
       output: '/home/user',
       successMsg: 'Perfecto, ya sabes tu punto de partida.'
     },
@@ -2211,6 +2231,7 @@
       prompt: 'Escribe ls y presiona Enter',
       context: 'ls lista el contenido de la carpeta donde estás parado ahora mismo.',
       command: 'ls',
+      tabCandidates: ['ls'],
       output: 'documentos  fotos  proyectos',
       successMsg: 'Así puedes ver qué hay a tu alrededor antes de moverte.'
     },
@@ -2261,6 +2282,7 @@
       prompt: 'Escribe touch notas.txt y presiona Enter',
       context: 'touch crea un archivo vacío con el nombre indicado.',
       command: 'touch notas.txt',
+      tabCandidates: ['touch', 'notas.txt'],
       output: "Archivo 'notas.txt' creado (vacío).",
       successMsg: 'Archivo creado y listo para usarse.'
     },
@@ -2298,6 +2320,7 @@
       prompt: 'Escribe rmdir vacia y presiona Enter',
       context: 'rmdir borra una carpeta llamada "vacia", siempre y cuando no tenga nada dentro.',
       command: 'rmdir vacia',
+      tabCandidates: ['rmdir', 'vacia'],
       output: "Carpeta 'vacia' eliminada.",
       successMsg: 'Justo por ser tan estricto, rmdir es una forma segura de limpiar carpetas que ya no usas.'
     },
@@ -2316,6 +2339,7 @@
       prompt: 'Escribe mv notas.txt archivo.txt y presiona Enter',
       context: 'mv puede renombrar un archivo si lo "mueves" al mismo lugar con otro nombre.',
       command: 'mv notas.txt archivo.txt',
+      tabCandidates: ['mv', 'notas.txt', 'archivo.txt'],
       output: 'notas.txt ahora se llama archivo.txt',
       successMsg: 'mv sirve tanto para mover como para renombrar.'
     },
@@ -2366,6 +2390,7 @@
       prompt: 'Escribe cat archivo.txt y presiona Enter',
       context: 'cat muestra el contenido de un archivo directamente en la terminal.',
       command: 'cat archivo.txt',
+      tabCandidates: ['cat', 'archivo.txt'],
       output: '(el archivo está vacío, por eso no se ve nada más)',
       successMsg: 'cat es la forma más rápida de asomarte al contenido de un archivo pequeño.'
     },
@@ -2422,6 +2447,7 @@
       prompt: 'Escribe tail archivo.txt y presiona Enter',
       context: 'tail muestra las últimas líneas de un archivo, al contrario que head.',
       command: 'tail archivo.txt',
+      tabCandidates: ['tail', 'archivo.txt'],
       output: '(el archivo está vacío, por eso no se ve nada más)',
       successMsg: 'head y tail son un buen par: uno mira el principio, el otro el final.'
     }
@@ -2462,6 +2488,7 @@
       prompt: 'Escribe pwd y presiona Enter',
       context: 'Confirma en qué carpeta estás antes de seguir moviéndote.',
       command: 'pwd',
+      tabCandidates: ['pwd'],
       output: '/home/user',
       successMsg: 'Siempre puedes preguntarle a la terminal dónde estás parado.'
     },
@@ -2498,6 +2525,7 @@
       prompt: 'Escribe ls y presiona Enter',
       context: 'Comprueba qué hay en tu carpeta actual antes de terminar el repaso.',
       command: 'ls',
+      tabCandidates: ['ls'],
       output: 'documentos  fotos  proyectos',
       successMsg: '¡Vas muy bien! Sigamos repasando un poco más.'
     },
@@ -2525,6 +2553,7 @@
       prompt: 'Escribe echo hola y presiona Enter',
       context: 'Este comando repite en pantalla el texto que le sigue.',
       command: 'echo hola',
+      tabCandidates: ['echo', 'hola'],
       output: 'hola',
       successMsg: 'echo repite exactamente lo que escribes después.'
     },
@@ -2619,6 +2648,7 @@
       context: 'Vas a necesitar combinar un comando que ya conoces con una opción que también viste antes, para que copie carpetas completas y no solo archivos sueltos.',
       hint: 'Es el mismo comando que usaste para copiar archivos, pero con una opción extra para que también copie carpetas completas.',
       command: 'cp -r documentos documentos_backup',
+      tabCandidates: ['cp', '-r', 'documentos', 'documentos_backup'],
       output: 'documentos_backup creada con una copia completa de documentos.',
       successMsg: '¡Lo lograste! Combinaste todo lo que aprendiste en Fundamentos para resolver una tarea real, sin que nadie te dijera el comando exacto.'
     },
@@ -2629,6 +2659,7 @@
       context: 'No hace falta copiar nada: hay un comando que cambia el nombre de un archivo directamente.',
       hint: 'Es el mismo comando que usarías para mover un archivo de carpeta, solo que aquí lo dejas en el mismo lugar con otro nombre.',
       command: 'mv borrador.txt version_final.txt',
+      tabCandidates: ['mv', 'borrador.txt', 'version_final.txt'],
       output: 'borrador.txt ahora se llama version_final.txt',
       successMsg: '¡Exacto! mv sirve tanto para mover como para renombrar, sin necesidad de copiar nada.'
     },
@@ -2639,6 +2670,7 @@
       context: 'Existe un símbolo que actúa como comodín y representa "cualquier cosa" dentro de un nombre de archivo.',
       hint: 'Combina el comando que lista archivos con un comodín que represente cualquier nombre, siempre que termine en ".log".',
       command: 'ls *.log',
+      tabCandidates: ['ls', '*.log'],
       output: 'error.log  sistema.log',
       successMsg: '¡Perfecto! El comodín * te dejó filtrar justo los archivos que buscabas.'
     },
@@ -2649,6 +2681,7 @@
       context: 'Recuerda que hay un comando que se niega a borrar carpetas si no están vacías, así que necesitas otro.',
       hint: 'Es el comando para borrar archivos, con una opción extra que también borra carpetas y todo lo que tengan dentro.',
       command: 'rm -r temporal',
+      tabCandidates: ['rm', '-r', 'temporal'],
       output: "Carpeta 'temporal' y todo su contenido eliminados.",
       successMsg: '¡Bien! rm -r es la forma de borrar una carpeta completa, incluso si no está vacía.'
     }
@@ -2672,6 +2705,7 @@
       context: 'El símbolo > redirige la salida del comando hacia un archivo, en vez de mostrarla en pantalla.',
       hint: 'Es el mismo echo que ya conoces, seguido del símbolo > y el nombre del archivo donde quieres guardar el resultado.',
       command: 'echo "hola mundo" > saludo.txt',
+      tabCandidates: ['echo', 'hola mundo', '>', 'saludo.txt'],
       output: 'saludo.txt creado con el texto: hola mundo',
       successMsg: '¡Así es! Ese texto ahora vive dentro de saludo.txt, no en la pantalla.'
     },
@@ -2711,6 +2745,7 @@
       context: '>> añade el texto al final del archivo, sin borrar lo que ya había dentro.',
       hint: 'Es el mismo echo de antes, pero con dos símbolos > seguidos en vez de uno solo.',
       command: 'echo "otra linea" >> saludo.txt',
+      tabCandidates: ['echo', 'otra linea', '>>', 'saludo.txt'],
       output: 'Se agregó "otra linea" al final de saludo.txt',
       successMsg: '¡Perfecto! saludo.txt ahora tiene dos líneas, sin haber perdido la primera.'
     },
@@ -2730,6 +2765,7 @@
       prompt: 'Escribe cat saludo.txt y presiona Enter',
       context: 'Confirma que saludo.txt tiene ambas líneas: la que creaste con > y la que agregaste con >>.',
       command: 'cat saludo.txt',
+      tabCandidates: ['cat', 'saludo.txt'],
       output: 'hola mundo\notra linea',
       successMsg: 'Ahí están las dos líneas: > creó la primera, >> agregó la segunda sin borrarla.'
     },
@@ -2750,6 +2786,7 @@
       context: 'El pipe envía la salida de cat directamente a head, que muestra las primeras líneas de lo que recibe.',
       hint: 'Es el comando cat que ya conoces, seguido del símbolo | y el comando head.',
       command: 'cat saludo.txt | head',
+      tabCandidates: ['cat', 'saludo.txt', '|', 'head'],
       output: 'hola mundo\notra linea',
       successMsg: '¡Eso es un pipe funcionando! head mostró justo lo que cat le entregó.'
     },
@@ -2789,6 +2826,7 @@
       context: 'El pipe envía tu historial de comandos a wc -l, que cuenta cuántas líneas (comandos) contiene.',
       hint: 'Es el comando history que ya conoces, seguido del símbolo | y wc -l.',
       command: 'history | wc -l',
+      tabCandidates: ['history', '|', 'wc', '-l'],
       output: '7',
       successMsg: 'wc -l te dio el número exacto de comandos en tu historial, sin que tuvieras que contarlos.'
     },
@@ -2828,6 +2866,7 @@
       context: 'Primero se ordena el historial con sort, y el resultado final se guarda en historial_ordenado.txt en vez de mostrarse en pantalla.',
       hint: 'Combina history, un pipe, sort, y termina con > seguido del nombre del archivo.',
       command: 'history | sort > historial_ordenado.txt',
+      tabCandidates: ['history', '|', 'sort', '>', 'historial_ordenado.txt'],
       output: 'historial_ordenado.txt creado con el historial ordenado alfabéticamente.',
       successMsg: '¡Excelente! Combinaste un pipe y una redirección en un mismo comando.'
     },
@@ -2898,6 +2937,7 @@
       context: 'find . -name busca, a partir de la carpeta actual, un archivo con ese nombre exacto.',
       hint: 'Es find, luego un punto para "desde aquí", luego -name y el nombre del archivo entre comillas.',
       command: 'find . -name "informe_final.txt"',
+      tabCandidates: ['find', '.', '-name', 'informe_final.txt'],
       output: './documentos/informe_final.txt',
       successMsg: '¡Encontrado! find recorrió las carpetas hasta dar con el archivo.'
     },
@@ -2918,6 +2958,7 @@
       context: 'find busca dentro de /home y todas sus subcarpetas, un archivo llamado fotos.zip.',
       hint: 'Es find, seguido de la ruta /home, luego -name y el nombre del archivo.',
       command: 'find /home -name "fotos.zip"',
+      tabCandidates: ['find', '/home', '-name', 'fotos.zip'],
       output: '/home/user/descargas/fotos.zip',
       successMsg: 'Así es: cambiar la carpeta inicial cambia dónde busca find, sin cambiar el resto del comando.'
     },
@@ -2947,6 +2988,7 @@
       context: '-type d le dice a find que muestre solo carpetas, ignorando los archivos.',
       hint: 'Es find, un punto, y luego -type seguido de la letra d (de "directory").',
       command: 'find . -type d',
+      tabCandidates: ['find', '.', '-type', 'd'],
       output: './documentos\n./fotos\n./proyectos',
       successMsg: '¡Exacto! Solo aparecieron carpetas, ningún archivo suelto.'
     },
@@ -2957,6 +2999,7 @@
       context: '-type f le dice a find que muestre solo archivos, dejando fuera las carpetas.',
       hint: 'Es el mismo comando anterior, pero cambiando la d por una f (de "file").',
       command: 'find . -type f',
+      tabCandidates: ['find', '.', '-type', 'f'],
       output: './documentos/informe_final.txt\n./fotos/vacaciones.jpg',
       successMsg: 'Perfecto: ahora solo ves archivos, sin ninguna carpeta en la lista.'
     },
@@ -2977,6 +3020,7 @@
       context: 'El comodín * encuentra cualquier archivo terminado en .txt, sin importar el resto del nombre.',
       hint: 'Es find, un punto, -name, y entre comillas un asterisco seguido de .txt.',
       command: 'find . -name "*.txt"',
+      tabCandidates: ['find', '.', '-name', '*.txt'],
       output: './notas.txt\n./documentos/informe_final.txt',
       successMsg: '¡Así se usan los comodines! Encontraste todos los .txt sin conocer sus nombres completos.'
     },
@@ -3006,6 +3050,7 @@
       context: 'locate consulta su índice interno y devuelve la ubicación al instante, sin recorrer carpetas.',
       hint: 'Es simplemente locate seguido del nombre del archivo, sin necesidad de indicar dónde buscar.',
       command: 'locate informe_final.txt',
+      tabCandidates: ['locate', 'informe_final.txt'],
       output: '/home/user/documentos/informe_final.txt',
       successMsg: '¡Casi sin esperar! Esa es la ventaja principal de locate frente a find.'
     },
@@ -3054,6 +3099,7 @@
       context: 'Combinas -type d (solo carpetas) con -name (nombre específico) para buscar la carpeta "proyectos" dentro de /home.',
       hint: 'Es find, la ruta /home, luego -type d, y por último -name con el nombre entre comillas.',
       command: 'find /home -type d -name "proyectos"',
+      tabCandidates: ['find', '/home', '-type', 'd', '-name', 'proyectos'],
       output: '/home/user/proyectos',
       successMsg: '¡Muy bien! Combinaste dos filtros de find en un mismo comando, algo muy común en el día a día.'
     },
@@ -3096,6 +3142,7 @@
       context: 'grep busca la palabra "presupuesto" dentro de notas.txt y muestra la línea completa donde aparece.',
       hint: 'Es grep, luego la palabra entre comillas, y por último el nombre del archivo.',
       command: 'grep "presupuesto" notas.txt',
+      tabCandidates: ['grep', 'presupuesto', 'notas.txt'],
       output: 'El presupuesto de este mes es de 500 dólares',
       successMsg: '¡Eso es! grep te mostró la línea exacta donde aparece la palabra.'
     },
@@ -3126,6 +3173,7 @@
       context: '-i hace que grep ignore mayúsculas y minúsculas al comparar el texto.',
       hint: 'Es grep, luego -i, luego la palabra entre comillas y el nombre del archivo.',
       command: 'grep -i "presupuesto" notas.txt',
+      tabCandidates: ['grep', '-i', 'presupuesto', 'notas.txt'],
       output: 'El presupuesto de este mes es de 500 dólares',
       successMsg: '¡Perfecto! Con -i, grep encontró la línea sin importar cómo escribiste la palabra.'
     },
@@ -3155,6 +3203,7 @@
       context: 'grep busca "TODO" en ambos archivos y muestra el nombre del archivo junto a cada línea encontrada.',
       hint: 'Es grep, la palabra entre comillas, y luego los dos nombres de archivo separados por un espacio.',
       command: 'grep "todo" tareas.txt notas.txt',
+      tabCandidates: ['grep', 'todo', 'tareas.txt', 'notas.txt'],
       output: 'tareas.txt:TODO revisar el informe\nnotas.txt:TODO llamar al cliente',
       successMsg: '¡Así es! grep revisó ambos archivos y te dijo en cuál apareció cada coincidencia.'
     },
@@ -3175,6 +3224,7 @@
       context: '-r hace que grep busque "TODO" en todos los archivos dentro de la carpeta actual y sus subcarpetas.',
       hint: 'Es grep, luego -r, luego la palabra entre comillas, y por último un punto para "desde aquí".',
       command: 'grep -r "todo" .',
+      tabCandidates: ['grep', '-r', 'todo', '.'],
       output: './tareas.txt:TODO revisar el informe\n./proyectos/plan.txt:TODO definir fecha',
       successMsg: '¡Excelente! -r convirtió a grep en una búsqueda que recorre toda la carpeta, no solo un archivo.'
     },
@@ -3204,6 +3254,7 @@
       context: '-n muestra el número de línea donde aparece cada coincidencia, antes del texto encontrado.',
       hint: 'Es grep, luego -n, luego la palabra entre comillas y el nombre del archivo.',
       command: 'grep -n "presupuesto" notas.txt',
+      tabCandidates: ['grep', '-n', 'presupuesto', 'notas.txt'],
       output: '4:El presupuesto de este mes es de 500 dólares',
       successMsg: '¡Así es! El "4:" al inicio te dice que la coincidencia está en la línea 4 del archivo.'
     },
@@ -3224,6 +3275,7 @@
       context: '-v invierte la búsqueda: muestra las líneas que NO contienen la palabra "completado".',
       hint: 'Es grep, luego -v, luego la palabra entre comillas y el nombre del archivo.',
       command: 'grep -v "completado" tareas.txt',
+      tabCandidates: ['grep', '-v', 'completado', 'tareas.txt'],
       output: 'TODO revisar el informe\nTODO llamar al cliente',
       successMsg: '¡Correcto! -v te mostró justo lo opuesto: las líneas donde esa palabra no aparece.'
     },
@@ -3253,6 +3305,7 @@
       context: 'El pipe envía tu historial completo a grep, que se queda solo con las líneas que contienen "cd".',
       hint: 'Es history, seguido del símbolo |, seguido de grep y la palabra entre comillas.',
       command: 'history | grep "cd"',
+      tabCandidates: ['history', '|', 'grep', 'cd'],
       output: 'cd documentos\ncd proyectos',
       successMsg: '¡Eso es! Combinaste un pipe con grep para filtrar justo lo que necesitabas ver.'
     },
@@ -3282,6 +3335,7 @@
       context: 'Combinas -r (subcarpetas) con -n (número de línea) para encontrar cada "TODO" en todo el proyecto, junto con su línea exacta.',
       hint: 'Es grep, luego -rn (las dos opciones juntas), luego la palabra entre comillas, y por último un punto.',
       command: 'grep -rn "todo" .',
+      tabCandidates: ['grep', '-rn', 'todo', '.'],
       output: './tareas.txt:1:TODO revisar el informe\n./proyectos/plan.txt:3:TODO definir fecha',
       successMsg: '¡Muy bien! Combinaste dos opciones de grep en un mismo comando, algo muy común en el trabajo real.'
     },
@@ -3324,6 +3378,7 @@
       context: '"history" lista, numerados, todos los comandos que has ejecutado antes.',
       hint: 'Es solo la palabra history, sin nada más.',
       command: 'history',
+      tabCandidates: ['history'],
       output: '1  pwd\n2  ls\n3  cd documentos',
       successMsg: '¡Bien! Ahora tienes a la vista todo lo que has escrito en esta sesión.'
     },
@@ -3345,6 +3400,7 @@
       context: '!! vuelve a ejecutar el último comando que corriste, sin necesidad de reescribirlo.',
       hint: 'Son solo dos signos de exclamación seguidos: !!',
       command: '!!',
+      tabCandidates: ['!!'],
       output: '(repite: ls -l)',
       successMsg: '¡Exacto! !! te ahorró volver a escribir el comando completo.'
     },
@@ -3366,6 +3422,7 @@
       context: '!2 busca el comando número 2 en tu historial y lo vuelve a ejecutar tal cual.',
       hint: 'Es el signo ! seguido directamente del número, sin espacio: !2',
       command: '!2',
+      tabCandidates: ['!2'],
       output: '(repite: ls)',
       successMsg: '¡Perfecto! Repetiste un comando anterior solo con su número de historial.'
     },
@@ -3395,6 +3452,7 @@
       context: 'El pipe envía tu historial completo a grep, que se queda solo con las líneas que contienen "cd".',
       hint: 'Es history, seguido del símbolo |, seguido de grep y la palabra entre comillas.',
       command: 'history | grep "cd"',
+      tabCandidates: ['history', '|', 'grep', 'cd'],
       output: '3  cd documentos\n7  cd proyectos',
       successMsg: '¡Eso es! Combinaste history con grep para encontrar justo lo que buscabas.'
     },
@@ -3540,6 +3598,7 @@
       context: '-c borra por completo el historial de comandos de la sesión actual.',
       hint: 'Es history, seguido de -c.',
       command: 'history -c',
+      tabCandidates: ['history', '-c'],
       output: '(historial vaciado)',
       successMsg: '¡Perfecto! Tu historial de esta sesión ha quedado completamente vacío.'
     },
@@ -3599,6 +3658,7 @@
       context: 'El pipe conecta la salida de ls con la entrada de sort, para ordenar alfabéticamente.',
       hint: 'Es el comando que lista archivos, seguido del símbolo | y sort.',
       command: 'ls | sort',
+      tabCandidates: ['ls', '|', 'sort'],
       output: 'documentos\nfotos\nproyectos',
       successMsg: 'El pipe conecta la salida de un comando con la entrada del siguiente.'
     },
@@ -3636,6 +3696,7 @@
       context: '-i le dice a grep que ignore mayúsculas y minúsculas al comparar el texto.',
       hint: 'Es grep, luego -i, luego la palabra entre comillas y el nombre del archivo.',
       command: 'grep -i "error" registro.txt',
+      tabCandidates: ['grep', '-i', 'error', 'registro.txt'],
       output: 'Error de conexión detectado',
       successMsg: 'Con -i, grep encontró la línea sin importar cómo estaba escrita la palabra.'
     },
@@ -3673,6 +3734,7 @@
       context: 'El pipe envía tu historial completo a grep, que se queda solo con las líneas que contienen "cd".',
       hint: 'Es history, seguido del símbolo |, seguido de grep y la palabra entre comillas.',
       command: 'history | grep "cd"',
+      tabCandidates: ['history', '|', 'grep', 'cd'],
       output: '3  cd documentos\n7  cd proyectos',
       successMsg: 'Combinar history con grep es una forma rápida de encontrar comandos anteriores.'
     },
@@ -3710,6 +3772,7 @@
       context: 'Combinas -type f (solo archivos) con -name (patrón de nombre) para buscar dentro de /home.',
       hint: 'Es find, la ruta /home, luego -type f, y por último -name con el patrón entre comillas.',
       command: 'find /home -type f -name "*.txt"',
+      tabCandidates: ['find', '/home', '-type', 'f', '-name', '*.txt'],
       output: '/home/user/notas.txt\n/home/user/documentos/informe.txt',
       successMsg: 'Combinaste dos filtros de find en un mismo comando, algo muy común en el día a día.'
     },
@@ -3747,6 +3810,7 @@
       context: 'Combinas -r (subcarpetas) con -n (número de línea) para encontrar cada TODO en todo el proyecto.',
       hint: 'Es grep, luego -rn (las dos opciones juntas), luego la palabra entre comillas, y por último un punto.',
       command: 'grep -rn "todo" .',
+      tabCandidates: ['grep', '-rn', 'todo', '.'],
       output: './tareas.txt:1:TODO revisar el informe\n./proyectos/plan.txt:3:TODO definir fecha',
       successMsg: 'Combinaste dos opciones de grep en un mismo comando, algo muy común en el trabajo real.'
     },
@@ -3943,6 +4007,7 @@
       context: 'ls -l muestra el listado "largo": permisos, dueño, grupo, tamaño y fecha de cada archivo, en vez de solo el nombre.',
       hint: 'Es el comando para listar archivos, con la opción -l (formato largo), seguido del nombre del archivo.',
       command: 'ls -l notas.txt',
+      tabCandidates: ['ls', '-l', 'notas.txt'],
       output: '-rw-r--r-- 1 user user 120 notas.txt',
       successMsg: 'Ahí está: user es el dueño y también el grupo de notas.txt, justo después de los permisos.'
     },
@@ -3991,6 +4056,7 @@
       context: 'groups muestra todos los grupos a los que pertenece tu usuario, sin argumentos.',
       hint: 'Es una sola palabra, sin nada más.',
       command: 'groups',
+      tabCandidates: ['groups'],
       output: 'user equipo diseño',
       successMsg: 'Así puedes ver de un vistazo todos los equipos a los que perteneces dentro del sistema.'
     },
@@ -4074,6 +4140,7 @@
       context: 'ls -l te muestra la cadena completa de permisos de ese archivo.',
       hint: 'Es el mismo comando de la lección anterior, con el nombre de este archivo.',
       command: 'ls -l script.sh',
+      tabCandidates: ['ls', '-l', 'script.sh'],
       output: '-rwxr-xr-- 1 ana equipo 512 script.sh',
       successMsg: 'rwx para ana (usuario), r-x para equipo (grupo), r-- para el resto (otros).'
     },
@@ -4175,6 +4242,7 @@
       context: 'La opción -d evita que ls entre a listar el contenido, y en cambio muestra los permisos de la carpeta misma.',
       hint: 'Es ls, con -ld pegado, y el nombre de la carpeta.',
       command: 'ls -ld proyectos',
+      tabCandidates: ['ls', '-ld', 'proyectos'],
       output: 'drwxr-x--- 1 ana equipo 4096 proyectos',
       successMsg: 'La "d" al inicio confirma que es una carpeta. rwx para ana, r-x para el grupo, --- para el resto: nadie más puede ni entrar ni ver qué hay dentro.'
     },
@@ -4752,6 +4820,7 @@
       prompt: 'Escribe groups y presiona Enter',
       context: 'groups muestra todos los grupos a los que pertenece tu usuario.',
       command: 'groups',
+      tabCandidates: ['groups'],
       output: 'user equipo diseño',
       successMsg: 'Un usuario puede pertenecer a varios grupos a la vez.'
     },
@@ -4788,6 +4857,7 @@
       prompt: 'Escribe chmod u+x despliegue.sh y presiona Enter',
       context: 'chmod u+x le agrega el permiso de ejecución al dueño del archivo, sin tocar los demás permisos.',
       command: 'chmod u+x despliegue.sh',
+      tabCandidates: ['chmod', 'u+x', 'despliegue.sh'],
       output: 'permisos actualizados: -rw-r--r-- → -rwxr--r--',
       successMsg: 'u+x agregó la x solo en el bloque del usuario.'
     },
@@ -4833,6 +4903,7 @@
       prompt: 'Escribe sudo chown carlos informe.txt y presiona Enter',
       context: 'chown le asigna un nuevo dueño a un archivo. Casi siempre necesita sudo.',
       command: 'sudo chown carlos informe.txt',
+      tabCandidates: ['sudo', 'chown', 'carlos', 'informe.txt'],
       output: 'propietario actualizado: ana → carlos',
       successMsg: 'chown transfiere la propiedad del archivo a otro usuario, sin tocar sus permisos rwx.'
     },
@@ -4887,6 +4958,7 @@
       prompt: 'Escribe ls -l script.sh y presiona Enter',
       context: 'ls -l muestra la cadena completa de permisos, dueño y grupo de un archivo.',
       command: 'ls -l script.sh',
+      tabCandidates: ['ls', '-l', 'script.sh'],
       output: '-rwxr-xr-- 1 ana equipo 512 script.sh',
       successMsg: 'rwx para ana (usuario), r-x para equipo (grupo), r-- para el resto (otros).'
     },
@@ -4898,6 +4970,90 @@
       options: ['Un archivo normal muy permisivo', 'Un enlace simbólico (link) a otro archivo', 'Una carpeta oculta'],
       correctIdx: 1,
       explain: 'La "l" al inicio identifica un enlace simbólico: un acceso directo que apunta a otro archivo o carpeta.'
+    }
+  ];
+
+  const desafioPermisosLessonSteps = [
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Sin instrucciones, solo la meta',
+      prompt: 'Heredaste un servidor de un compañero que ya no trabaja en el equipo. Vas a revisar un archivo de configuración y dejarlo con el dueño y los permisos correctos, todo en la misma sesión.',
+      context: 'Vas a necesitar revisar el estado actual antes de cambiar nada, y combinar lo que sabes de propietarios y permisos.',
+      successMsg: '¡Sesión completa! Diagnosticaste el problema y lo corregiste combinando chown y chmod sin que nadie te dijera los comandos exactos.',
+      steps: [
+        {
+          goal: 'Primero revisa quién es el dueño actual y qué permisos tiene config.yml.',
+          command: 'ls -l config.yml',
+          output: '-rw-rw-rw- 1 martin devops 890 config.yml',
+          hint: 'El comando que lista archivos con detalle, seguido del nombre del archivo.',
+          tabCandidates: ['ls', 'config.yml']
+        },
+        {
+          goal: 'martin ya no trabaja aquí. Cambia el dueño del archivo a carlos, sin tocar el grupo por ahora.',
+          command: 'sudo chown carlos config.yml',
+          output: 'propietario actualizado: martin → carlos',
+          hint: 'El comando que cambia el dueño de un archivo, elevando privilegios porque no eres el dueño actual.',
+          tabCandidates: ['sudo', 'chown', 'config.yml']
+        },
+        {
+          goal: 'El archivo también debería pertenecer al grupo "devops" en vez de a otro grupo. Confirma que ya es así o corrígelo.',
+          command: 'sudo chgrp devops config.yml',
+          output: 'grupo actualizado: devops → devops (sin cambios)',
+          hint: 'El comando que cambia únicamente el grupo de un archivo.',
+          tabCandidates: ['sudo', 'chgrp', 'config.yml']
+        },
+        {
+          goal: 'rw-rw-rw- es demasiado abierto para un archivo de configuración. Déjalo en rwx para el dueño, r-x para el grupo, y nada para otros.',
+          command: 'chmod 750 config.yml',
+          output: 'permisos actualizados: -rw-rw-rw- → -rwxr-x---',
+          hint: 'El comando que cambia permisos con notación numérica: 7 para el dueño, 5 para el grupo, 0 para otros.',
+          tabCandidates: ['chmod', 'config.yml']
+        },
+        {
+          goal: 'Confirma que todo quedó como esperabas antes de cerrar la sesión.',
+          command: 'ls -l config.yml',
+          output: '-rwxr-x--- 1 carlos devops 890 config.yml',
+          hint: 'El mismo comando que usaste al principio para revisar dueño y permisos.',
+          tabCandidates: ['ls', 'config.yml']
+        }
+      ]
+    },
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Sin instrucciones, solo la meta',
+      prompt: 'Un script de despliegue nuevo no se ejecuta y varios compañeros del equipo necesitan poder correrlo. Vas a diagnosticar el problema y dejarlo funcionando para todo el equipo, sin abrirlo al resto del sistema.',
+      context: 'Piensa en qué permiso falta para poder ejecutar un archivo, y en qué rol representa a tus compañeros de equipo.',
+      successMsg: '¡Perfecto! Diagnosticaste el permiso que faltaba y lo corregiste para el grupo correcto, sin dejar el archivo abierto a cualquiera.',
+      steps: [
+        {
+          goal: 'Antes de nada, revisa los permisos actuales de deploy.sh para entender por qué falla.',
+          command: 'ls -l deploy.sh',
+          output: '-rw-r----- 1 ana equipo 610 deploy.sh',
+          hint: 'El comando que muestra permisos, dueño y grupo de un archivo.',
+          tabCandidates: ['ls', 'deploy.sh']
+        },
+        {
+          goal: 'Confirma a qué grupo pertenece tu propio usuario, para asegurarte de que coincide con "equipo".',
+          command: 'groups',
+          output: 'ana equipo',
+          hint: 'El comando que lista los grupos a los que pertenece tu usuario, sin argumentos.',
+          tabCandidates: ['groups']
+        },
+        {
+          goal: 'Al grupo le falta el permiso de ejecución. Agrégaselo sin tocar los permisos del dueño ni de otros.',
+          command: 'chmod g+x deploy.sh',
+          output: 'permisos actualizados: -rw-r----- → -rw-r-x---',
+          hint: 'El comando de permisos con notación simbólica: g de grupo, + para agregar, x de ejecución.',
+          tabCandidates: ['chmod', 'deploy.sh']
+        },
+        {
+          goal: 'Verifica que el cambio se aplicó correctamente antes de avisarle al equipo.',
+          command: 'ls -l deploy.sh',
+          output: '-rw-r-x--- 1 ana equipo 610 deploy.sh',
+          hint: 'El mismo comando que usaste al principio.',
+          tabCandidates: ['ls', 'deploy.sh']
+        }
+      ]
     }
   ];
 
@@ -4932,7 +5088,7 @@
         { title: 'chmod', sub: 'notación numérica y simbólica', status: 'active', icon: 'folder', exercises: chmodLessonSteps },
         { title: 'chown y chgrp', sub: 'cambiar propietario y grupo', status: 'active', icon: 'refresh', exercises: chownLessonSteps },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoPermisosLessonSteps },
-        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true, intro: 'Sin pistas paso a paso: combina propietarios, permisos, chmod, chown y chgrp para resolver dos situaciones reales de principio a fin.', exercises: desafioPermisosLessonSteps },
       ]
     },
     4: {
@@ -5766,7 +5922,40 @@
       let attempts = 0;
       let hintLevel = 0; // 0 = sin pista, 1 = pista conceptual, 2 = primera letra (máximo, nunca se revela el comando completo)
       const hintEl = document.getElementById('type-command-hint');
+      let tcLastTabPrefix = null;
       input.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const output = document.getElementById('type-command-output');
+          const raw = input.value;
+          const lastSpaceIdx = raw.lastIndexOf(' ');
+          const staticPart = lastSpaceIdx >= 0 ? raw.slice(0, lastSpaceIdx + 1) : '';
+          const typedWord = lastSpaceIdx >= 0 ? raw.slice(lastSpaceIdx + 1) : raw;
+          const trimmedWord = typedWord.trim();
+          if (!trimmedWord) return;
+
+          const candidates = ex.tabCandidates || [];
+          const matches = candidates.filter(c => c.toLowerCase().startsWith(trimmedWord.toLowerCase()));
+
+          if (matches.length === 1) {
+            input.value = staticPart + matches[0];
+            output.classList.remove('error');
+            output.textContent = '';
+            tcLastTabPrefix = null;
+            const len = input.value.length;
+            setTimeout(() => input.setSelectionRange(len, len), 0);
+          } else if (matches.length > 1) {
+            if (tcLastTabPrefix === trimmedWord) {
+              output.classList.remove('error');
+              output.textContent = matches.join('   ');
+            } else {
+              tcLastTabPrefix = trimmedWord;
+            }
+          } else {
+            tcLastTabPrefix = null;
+          }
+          return;
+        }
         if (e.key !== 'Enter') return;
         const value = input.value.trim().toLowerCase();
         const output = document.getElementById('type-command-output');
@@ -5796,6 +5985,7 @@
             : ' (primer intento, sin penalización)';
           output.innerHTML = escapeHtml(value || ' ') + ': comando no encontrado' + heartMsg +
             '<br><span class="type-command-explain">Por qué falló: ' + errorExplain + '</span>';
+          output.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
           if (attempts >= 3 && hintLevel < 1) {
             hintLevel = 1;
@@ -6094,6 +6284,7 @@
           : ' (primer intento, sin penalización)';
         output.innerHTML = escapeHtml(value || ' ') + ': comando no encontrado' + heartMsg +
           '<br><span class="type-command-explain">Por qué falló: ' + errorExplain + '</span>';
+        requestAnimationFrame(scrollMsTermToBottom);
 
         if (msAttempts >= 3 && msHintLevel < 1) msHintLevel = 1;
         if (msAttempts >= 6 && msHintLevel < 2) msHintLevel = 2;
