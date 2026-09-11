@@ -126,6 +126,19 @@
     overflow: hidden;
   }
 
+  /* #app-main necesita ser un hijo flex con min-height: 0 desde la
+     vista mobile/base, no solo en desktop: sin esto, su altura crece
+     con el contenido en vez de heredar la altura limitada de #app, y
+     el overflow-y: auto de .lesson-body más abajo en la cadena nunca
+     llega a activarse (el contenido se corta contra el overflow:
+     hidden de #app/body en vez de hacer scroll). */
+  #app-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   /* ---- DESKTOP LAYOUT ----
      A partir de 900px dejamos de simular una app móvil flotando en el
      centro de la pantalla: el topbar se convierte en una barra
@@ -6107,6 +6120,7 @@
             : ' (primer intento, sin penalización)';
           acOutput.innerHTML = escapeHtml(acInput.value || ' ') + ': no es el comando esperado' + heartMsg +
             '<br><span class="type-command-explain">Por qué falló: ' + errorExplain + '</span>';
+          acOutput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           if (acAttempts >= 3 && acHintLevel < 1) acHintLevel = 1;
           acHint.classList.remove('level-1');
           if (acHintLevel === 1) {
@@ -6135,6 +6149,16 @@
   function scrollMsTermToBottom() {
     const termBody = document.getElementById('ms-term-body');
     if (termBody) termBody.scrollTop = termBody.scrollHeight;
+    // La terminal interna ya queda desplazada hasta el final, pero eso no
+    // garantiza que el cuadro completo sea visible: si .lesson-body (el
+    // contenedor exterior con scroll propio) no tiene suficiente alto
+    // -por ejemplo con zoom al 100% en vez de 90%, donde hay menos alto
+    // de viewport disponible en px- la parte de abajo de la terminal
+    // queda fuera de la zona visible sin que nada la traiga a la vista.
+    // scrollIntoView sí recorre TODOS los ancestros con scroll (incluido
+    // .lesson-body) y los ajusta lo necesario, sea cual sea el viewport.
+    const termBox = document.getElementById('ms-term-box');
+    if (termBox) termBox.scrollIntoView({ block: 'end', behavior: 'smooth' });
   }
 
   function renderMultiStepTerminal(ex) {
@@ -6149,7 +6173,7 @@
       <div class="exercise-prompt">${ex.prompt}</div>
       <div class="exercise-context">${ex.context}</div>
       <div class="multistep-progress">Paso <strong id="ms-step-num">1</strong> de ${ex.steps.length}</div>
-      <div class="mini-term">
+      <div class="mini-term" id="ms-term-box">
         <div class="mini-term-bar">
           <div class="mini-term-dot" style="background:#FF5F57"></div>
           <div class="mini-term-dot" style="background:#FEBC2E"></div>
