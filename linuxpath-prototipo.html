@@ -3513,15 +3513,15 @@
     {
       type: 'autocomplete-command',
       kicker: 'Practica',
-      prompt: 'Tu carpeta actual tiene estas subcarpetas: documentos, descargas, descargas-antiguas, imagenes y musica. Escribe cd doc y presiona la tecla Tab de verdad para autocompletar',
-      context: 'Solo documentos empieza con doc, así que Tab la completa sola. Si el prefijo coincidiera con más de una carpeta (como des con descargas y descargas-antiguas), Tab no completaría nada hasta que escribieras una letra más para desempatar.',
-      hint: 'Escribe cd doc y luego presiona la tecla Tab de tu teclado (no la escribas como texto).',
+      prompt: 'Tu carpeta actual tiene estas subcarpetas: documentos, descargas, descargas-antiguas, imagenes y musica. Escribe cd documentos',
+      context: '"cd" te mueve a la carpeta que le indiques, usando su nombre completo.',
+      hint: 'Termina de escribir el nombre completo de la carpeta.',
       candidates: ['documentos', 'descargas', 'descargas-antiguas', 'imagenes', 'musica'],
       prefixTemplate: 'cd {prefix}',
       startPrefix: 'doc',
       command: 'cd documentos',
       output: 'cd documentos',
-      successMsg: '¡Así es! Tab completó el nombre por ti, sin que tuvieras que escribirlo entero.'
+      successMsg: '¡Así es! documentos era la única carpeta que empezaba con doc.'
     },
     {
       type: 'concept',
@@ -4190,15 +4190,15 @@
     {
       type: 'autocomplete-command',
       kicker: 'Practica',
-      prompt: 'Tu carpeta tiene los archivos despliegue.sh, descarga.log y notas.txt. Escribe ls -l desp y presiona la tecla Tab de verdad para autocompletar',
-      context: 'Solo despliegue.sh empieza con "desp", así que Tab lo completa sin ambigüedad.',
-      hint: 'Escribe ls -l desp y luego presiona la tecla Tab de tu teclado (no la escribas como texto).',
+      prompt: 'Tu carpeta tiene los archivos despliegue.sh, descarga.log y notas.txt. Escribe ls -l despliegue.sh',
+      context: '"ls -l" muestra los permisos y detalles de un archivo o carpeta.',
+      hint: 'Termina de escribir el nombre completo del archivo.',
       candidates: ['despliegue.sh', 'descarga.log', 'notas.txt'],
       prefixTemplate: 'ls -l {prefix}',
       startPrefix: 'desp',
       command: 'ls -l despliegue.sh',
       output: '-rwxr-xr-- 1 ana equipo 890 despliegue.sh',
-      successMsg: 'Tab te ahorró escribir el nombre completo, y de paso confirmaste que despliegue.sh sí tiene permiso de ejecución (x) para ana.'
+      successMsg: 'Confirmaste que despliegue.sh sí tiene permiso de ejecución (x) para ana.'
     },
     {
       type: 'choice',
@@ -4300,15 +4300,15 @@
     {
       type: 'autocomplete-command',
       kicker: 'Practica',
-      prompt: 'despliegue.sh no tiene permiso de ejecución para el dueño. Tu carpeta también tiene despedida.txt y descarga.log. Escribe chmod u+x desp y presiona la tecla Tab de verdad para autocompletar',
-      context: 'Tres archivos empiezan distinto: despliegue.sh, despedida.txt y descarga.log. Con "desp" ya hay dos coincidencias (despliegue.sh y despedida.txt), así que Tab no completa hasta que agregues una letra más para desempatar.',
-      hint: 'Escribe chmod u+x despl y luego presiona la tecla Tab de tu teclado (no la escribas como texto).',
+      prompt: 'despliegue.sh no tiene permiso de ejecución para el dueño. Tu carpeta también tiene despedida.txt y descarga.log. Escribe chmod u+x despliegue.sh',
+      context: '"chmod u+x" le agrega el permiso de ejecución al dueño del archivo.',
+      hint: 'Termina de escribir el nombre completo del archivo.',
       candidates: ['despliegue.sh', 'despedida.txt', 'descarga.log'],
       prefixTemplate: 'chmod u+x {prefix}',
       startPrefix: 'desp',
       command: 'chmod u+x despliegue.sh',
       output: 'permisos actualizados: -rw-r--r-- → -rwxr--r--',
-      successMsg: 'u+x agregó la x solo en el bloque del usuario. Grupo y otros no cambiaron, y Tab te ahorró escribir el nombre completo.'
+      successMsg: 'u+x agregó la x solo en el bloque del usuario. Grupo y otros no cambiaron.'
     },
     // --- Tema 2: quitar permisos con - y usar = para fijar exactamente ---
     {
@@ -4380,15 +4380,15 @@
     {
       type: 'autocomplete-command',
       kicker: 'Practica',
-      prompt: 'Deja despliegue.sh con rwx para el usuario, r-x para el grupo y sin ningún permiso para otros. Tu carpeta también tiene desplazar.sh. Escribe chmod 750 desp y presiona Tab',
-      context: 'Convierte cada bloque a su número: rwx=7, r-x=5, ---=0. despliegue.sh y desplazar.sh comparten el prefijo "desp", así que necesitas una letra más para que Tab complete uno solo.',
-      hint: 'Escribe chmod 750 despl y luego presiona la tecla Tab de tu teclado.',
+      prompt: 'Deja despliegue.sh con rwx para el usuario, r-x para el grupo y sin ningún permiso para otros. Tu carpeta también tiene desplazar.sh. Escribe chmod 750 despliegue.sh',
+      context: '750 equivale a rwx para el usuario, r-x para el grupo y --- para otros.',
+      hint: 'Termina de escribir el nombre completo del archivo.',
       candidates: ['despliegue.sh', 'desplazar.sh'],
       prefixTemplate: 'chmod 750 {prefix}',
       startPrefix: 'desp',
       command: 'chmod 750 despliegue.sh',
       output: 'permisos actualizados: rwxr-x---',
-      successMsg: '7 (rwx) para el usuario, 5 (r-x) para el grupo, 0 (---) para otros. Tab evitó que escribieras mal el nombre del archivo.'
+      successMsg: '7 (rwx) para el usuario, 5 (r-x) para el grupo, 0 (---) para otros.'
     },
     // --- Tema 4: combinaciones numéricas comunes ---
     {
@@ -4441,15 +4441,15 @@
     {
       type: 'autocomplete-command',
       kicker: 'Practica',
-      prompt: 'Quieres que todo dentro de la carpeta scripts tenga permiso de ejecución para el grupo, de una sola vez. También existe una carpeta script-viejo. Escribe chmod -R g+x scri y presiona Tab',
-      context: 'Necesitas la opción recursiva de chmod (-R), más la operación de agregar el permiso (g+x). scripts y script-viejo comparten el prefijo "scri", así que Tab pedirá una letra más para desempatar.',
-      hint: 'Escribe chmod -R g+x script y luego presiona la tecla Tab de tu teclado.',
+      prompt: 'Quieres que todo dentro de la carpeta scripts tenga permiso de ejecución para el grupo, de una sola vez. También existe una carpeta script-viejo. Escribe chmod -R g+x scripts',
+      context: '-R aplica el cambio a la carpeta y a todo lo que contiene, no solo a la carpeta en sí.',
+      hint: 'Termina de escribir el nombre completo de la carpeta.',
       candidates: ['scripts', 'script-viejo'],
       prefixTemplate: 'chmod -R g+x {prefix}',
       startPrefix: 'scri',
       command: 'chmod -R g+x scripts',
       output: 'permisos actualizados recursivamente en scripts/ y todo su contenido',
-      successMsg: '-R hizo que g+x se aplicara a la carpeta scripts Y a todo lo que contiene, no solo a la carpeta en sí. Tab te ahorró terminar de escribir el nombre.'
+      successMsg: '-R hizo que g+x se aplicara a la carpeta scripts Y a todo lo que contiene, no solo a la carpeta en sí.'
     },
     // --- Tema 6: predecir el resultado (aplicación combinada) ---
     {
@@ -4484,6 +4484,423 @@
     }
   ];
 
+  const chownLessonSteps = [
+    // --- Tema 1: chown, cambiar el dueño ---
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'chown: el comando que cambia el dueño',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'chown = change owner', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', text: 'le asigna un nuevo usuario dueño a un archivo o carpeta', you: false }
+      ],
+      body: 'Ya sabes que todo archivo tiene un dueño y un grupo, visibles con ls -l. chown (de "change owner") es el comando que te deja cambiar quién es el dueño: se lo puedes transferir a otro usuario del sistema. A diferencia de chmod, que cambia qué se puede hacer con el archivo, chown cambia de quién es.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Sintaxis básica: chown nuevo_dueño archivo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'chown carlos informe.txt', you: true }
+      ],
+      body: 'El orden es simple: primero el nombre del nuevo dueño, después el archivo o carpeta. chown carlos informe.txt significa "informe.txt ahora le pertenece a carlos". El dueño anterior deja de serlo; los permisos rwx del archivo no cambian, solo cambia a quién pertenecen.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Qué hace exactamente chown carlos informe.txt?',
+      context: 'chown cambia quién es el dueño, no qué permisos tiene el archivo.',
+      options: ['Le da permiso de lectura a carlos', 'Convierte a carlos en el nuevo dueño del archivo', 'Crea una copia del archivo para carlos'],
+      correctIdx: 1,
+      explain: 'chown transfiere la propiedad del archivo a otro usuario. Los permisos rwx que ya tenía el archivo no se tocan.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'informe.txt le pertenecía a ana, pero ahora carlos se hará cargo. Tu carpeta también tiene informe-viejo.txt e instrucciones.txt. Escribe sudo chown carlos informe.txt',
+      context: 'chown le asigna un nuevo dueño a un archivo o carpeta.',
+      hint: 'Termina de escribir el nombre completo del archivo.',
+      candidates: ['informe.txt', 'informe-viejo.txt', 'instrucciones.txt'],
+      prefixTemplate: 'sudo chown carlos {prefix}',
+      startPrefix: 'info',
+      command: 'sudo chown carlos informe.txt',
+      output: 'propietario actualizado: ana → carlos',
+      successMsg: 'Ahora carlos es el dueño de informe.txt. ana ya no aparece como propietaria.'
+    },
+    // --- Tema 2: cambiar dueño y grupo a la vez con : ---
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'chown dueño:grupo archivo — cambia ambos de una vez',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'chown carlos:diseño informe.txt', you: true }
+      ],
+      body: 'chown también acepta dueño y grupo juntos, separados por dos puntos. chown carlos:diseño informe.txt hace dos cosas en un solo comando: pone a carlos como dueño Y pone a diseño como grupo. Es la forma más rápida cuando necesitas cambiar ambos datos a la vez.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas chown carlos:diseño informe.txt. ¿Qué cambia exactamente?',
+      context: 'Antes de los dos puntos va el dueño; después, el grupo.',
+      options: ['Solo cambia el dueño a carlos', 'Cambia el dueño a carlos y el grupo a diseño', 'Cambia el grupo a carlos y el dueño a diseño'],
+      correctIdx: 1,
+      explain: 'El nombre antes de los dos puntos es siempre el nuevo dueño; el que sigue después es el nuevo grupo. carlos:diseño pone a carlos como dueño y a diseño como grupo.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres que backup.tar le pertenezca al usuario carlos y al grupo copias, en un solo comando. Ordena las piezas.',
+      context: 'Necesitas chown con dueño y grupo juntos, separados por dos puntos.',
+      chips: ['chown', 'carlos:copias', 'backup.tar', 'chgrp', 'carlos'],
+      correctOrder: ['chown', 'carlos:copias', 'backup.tar'],
+      explain: 'chown carlos:copias backup.tar cambia el dueño a carlos y el grupo a copias en un solo paso. chgrp por sí solo no puede cambiar el dueño.'
+    },
+    // --- Tema 3: chgrp, cambiar solo el grupo ---
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'chgrp: cambiar solo el grupo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', text: 'chgrp diseño logo.png', you: true }
+      ],
+      body: 'Cuando solo necesitas cambiar el grupo, sin tocar al dueño, existe un comando dedicado: chgrp (de "change group"). chgrp diseño logo.png deja a logo.png con el mismo dueño de siempre, pero ahora asociado al grupo diseño en vez del que tenía antes.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'chown :grupo archivo — la otra forma de cambiar solo el grupo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'chown :diseño logo.png', you: true }
+      ],
+      body: 'chown también puede cambiar solo el grupo, si dejas el nombre del dueño vacío antes de los dos puntos. chown :diseño logo.png hace exactamente lo mismo que chgrp diseño logo.png: cambia el grupo y deja al dueño intacto. Son dos caminos al mismo resultado.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Cuál de estos comandos cambia SOLO el grupo de logo.png a diseño, sin tocar al dueño?',
+      context: 'Ten cuidado: uno de ellos en realidad intenta cambiar el dueño.',
+      options: ['chown diseño logo.png', 'chgrp diseño logo.png', 'chmod diseño logo.png'],
+      correctIdx: 1,
+      explain: 'chgrp diseño logo.png cambia únicamente el grupo. chown diseño logo.png es un error común: sin los dos puntos, chown interpreta "diseño" como el nuevo dueño, no como grupo. chmod ni siquiera trabaja con dueños o grupos.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'La carpeta reportes debe pertenecer al grupo contabilidad en vez de equipo. También existe reportes-2023. Escribe sudo chgrp contabilidad reportes',
+      context: 'chgrp cambia el grupo de un archivo o carpeta, sin tocar al dueño.',
+      hint: 'Termina de escribir el nombre completo de la carpeta.',
+      candidates: ['reportes', 'reportes-2023'],
+      prefixTemplate: 'sudo chgrp contabilidad {prefix}',
+      startPrefix: 'repor',
+      command: 'sudo chgrp contabilidad reportes',
+      output: 'grupo actualizado: equipo → contabilidad',
+      successMsg: 'El dueño de reportes no cambió, solo su grupo.'
+    },
+    // --- Tema 4: por qué casi siempre necesitas sudo ---
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Por qué chown casi siempre pide sudo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'chown carlos informe.txt', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chown: changing ownership: Operation not permitted', you: false }
+      ],
+      body: 'Cualquiera puede regalar sus propios archivos a quien quiera, así que por seguridad Linux no lo permite: solo root puede cambiar el dueño de un archivo hacia otro usuario. Por eso casi todo comando chown va precedido de sudo. chgrp es un poco más flexible: si el archivo es tuyo y perteneces al grupo destino, a veces funciona sin sudo, pero también suele requerirlo en la práctica.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas chown carlos informe.txt sin sudo, y no eres root. ¿Qué pasa?',
+      context: 'Cambiar el dueño de un archivo hacia otra persona es una operación delicada.',
+      options: ['Funciona sin problema', 'Te da un error de permiso: no está permitido', 'Cambia el grupo en vez del dueño'],
+      correctIdx: 1,
+      explain: 'Solo root puede transferir un archivo a otro dueño. Un usuario normal sin sudo recibe un error de "Operation not permitted".'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Necesitas privilegios de administrador para que sistema.log le pertenezca a root. Ordena las piezas.',
+      context: 'chown por sí solo no alcanza si no eres root: hace falta anteponer el comando que eleva privilegios.',
+      chips: ['sudo', 'chown', 'root', 'sistema.log', 'chmod'],
+      correctOrder: ['sudo', 'chown', 'root', 'sistema.log'],
+      explain: 'sudo chown root sistema.log eleva tus privilegios y luego transfiere el archivo a root. Sin sudo, la operación fallaría.'
+    },
+    // --- Tema 5: chown -R (recursivo) ---
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '-R: aplicar el cambio a toda una carpeta de una vez',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>', text: 'sudo chown -R carlos:equipo proyecto/', you: true }
+      ],
+      body: 'Igual que chmod, chown y chgrp aceptan la opción -R (recursivo). Por defecto solo cambian el archivo o carpeta indicado, pero con -R el nuevo dueño y grupo se aplican a la carpeta Y a absolutamente todo lo que contiene, sin importar cuántos niveles de subcarpetas tenga.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas sudo chown -R carlos proyecto/, y proyecto/ contiene varias subcarpetas y archivos. ¿Qué pasa?',
+      context: 'Piensa en qué significa "recursivo" para una carpeta con contenido adentro.',
+      options: ['Solo cambia el dueño de la carpeta proyecto, no de lo que contiene', 'El nuevo dueño se aplica a la carpeta y a todo lo que hay dentro', 'Falla porque -R no existe para chown'],
+      correctIdx: 1,
+      explain: '-R hace que el cambio de dueño se propague a cada subcarpeta y archivo dentro de proyecto/, no solo a la carpeta en sí.'
+    },
+    {
+      type: 'autocomplete-command',
+      kicker: 'Practica',
+      prompt: 'El proyecto entero (carpeta proyecto-web y todo su contenido) debe pasar a pertenecer a carlos y al grupo equipo. También existe una carpeta proyecto-viejo. Escribe sudo chown -R carlos:equipo proyecto-web',
+      context: 'La opción -R aplica el nuevo dueño y grupo a la carpeta y a todo lo que contiene.',
+      hint: 'Termina de escribir el nombre completo de la carpeta.',
+      candidates: ['proyecto-web', 'proyecto-viejo'],
+      prefixTemplate: 'sudo chown -R carlos:equipo {prefix}',
+      startPrefix: 'proyecto-w',
+      command: 'sudo chown -R carlos:equipo proyecto-web',
+      output: 'propietario y grupo actualizados recursivamente en proyecto-web/ y todo su contenido',
+      successMsg: 'carlos y equipo ahora son dueño y grupo de proyecto-web y de todo lo que hay dentro.'
+    },
+    // --- Tema 6: resumen y práctica encadenada ---
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'chown y chgrp, en pocas palabras',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chown usuario archivo → cambia el dueño', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chown usuario:grupo archivo → cambia ambos', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'chgrp grupo archivo → cambia solo el grupo', you: false }
+      ],
+      body: 'Repasemos: chown cambia el dueño de un archivo, y con dueño:grupo puede cambiar ambos de una vez. chgrp (o chown :grupo) cambia solo el grupo, sin tocar al dueño. Casi siempre necesitas sudo, porque solo root puede transferir la propiedad de un archivo a otra persona. Y -R aplica cualquiera de estos cambios a una carpeta completa, junto con todo su contenido.'
+    },
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Ponlo en práctica',
+      prompt: 'Vas a traspasar un archivo de ana a carlos, y ajustar su grupo, todo en la misma sesión de terminal.',
+      context: 'Es la misma terminal de principio a fin: lo que escribas en un paso afecta lo que ves en el siguiente.',
+      successMsg: '¡Sesión completa! Cambiaste el dueño y el grupo de un archivo real, confirmando el resultado con ls -l.',
+      steps: [
+        {
+          goal: 'Primero, revisa quién es el dueño y el grupo actuales de contrato.pdf.',
+          command: 'ls -l contrato.pdf',
+          output: '-rw-r--r-- 1 ana equipo 220 contrato.pdf',
+          hint: 'El comando de listado largo, seguido del nombre del archivo.',
+          tabCandidates: ['ls', 'contrato.pdf']
+        },
+        {
+          goal: 'Cambia el dueño de contrato.pdf a carlos.',
+          command: 'sudo chown carlos contrato.pdf',
+          output: 'propietario actualizado: ana → carlos',
+          hint: 'El comando para cambiar dueño, elevando privilegios, seguido del nuevo usuario y el archivo.',
+          tabCandidates: ['sudo', 'chown', 'carlos', 'contrato.pdf']
+        },
+        {
+          goal: 'Ahora cambia también su grupo a legal.',
+          command: 'sudo chgrp legal contrato.pdf',
+          output: 'grupo actualizado: equipo → legal',
+          hint: 'El comando que cambia solo el grupo, elevando privilegios.',
+          tabCandidates: ['sudo', 'chgrp', 'legal', 'contrato.pdf']
+        },
+        {
+          goal: 'Confirma que el cambio se aplicó correctamente.',
+          command: 'ls -l contrato.pdf',
+          output: '-rw-r--r-- 1 carlos legal 220 contrato.pdf',
+          hint: 'El mismo comando que usaste al principio.',
+          tabCandidates: ['ls', 'contrato.pdf']
+        }
+      ]
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Quieres que backup.zip pase a pertenecer al usuario carlos, sin tocar su grupo actual. ¿Qué comando usas?',
+      context: 'Piensa en qué comando afecta solo al dueño.',
+      options: ['chgrp carlos backup.zip', 'chown carlos backup.zip', 'chown carlos: backup.zip'],
+      correctIdx: 1,
+      explain: 'chown carlos backup.zip cambia únicamente el dueño. chown carlos: (con dos puntos y nada después) cambiaría el grupo al grupo principal de carlos, y chgrp no puede cambiar el dueño.'
+    }
+  ];
+
+  const repasoPermisosLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Repaso final',
+      prompt: 'Todo lo que aprendiste en Archivos y permisos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', text: 'usuario · grupo · otros', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', text: 'rwx · chmod · chown · chgrp', you: false }
+      ],
+      body: 'Antes de pasar al siguiente nivel, vamos a repasar mezclado todo lo que ya sabes: propietarios y grupos, permisos rwx, cómo cambiarlos con chmod, y cómo cambiar el dueño o el grupo con chown y chgrp. Si te trabas en algo, vuelve a la lección correspondiente.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ejecutas ls -l y ves: -rw-r--r-- 1 ana equipo 340 informe.txt. ¿Quién es el dueño del archivo?',
+      context: 'El dueño y el grupo aparecen como dos nombres seguidos, justo después del número que sigue a los permisos.',
+      options: ['ana', 'equipo', 'informe.txt'],
+      correctIdx: 0,
+      explain: 'El primer nombre después de los permisos (ana) es siempre el usuario dueño del archivo. El segundo (equipo) es el grupo.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Un archivo del sistema pertenece al usuario root y al grupo admins. Tu cuenta no es root ni pertenece a admins. ¿Como qué rol te trata Linux frente a ese archivo?',
+      context: 'Piensa en los tres roles posibles y cuál te queda si no eres el dueño ni perteneces al grupo.',
+      options: ['Usuario', 'Grupo', 'Otros'],
+      correctIdx: 2,
+      explain: 'Si no eres el dueño ni perteneces al grupo del archivo, Linux te trata como "otros" — la categoría más amplia y, normalmente, la más restringida.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe groups y presiona Enter',
+      context: 'groups muestra todos los grupos a los que pertenece tu usuario.',
+      command: 'groups',
+      output: 'user equipo diseño',
+      successMsg: 'Un usuario puede pertenecer a varios grupos a la vez.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ves el permiso rw- para el grupo de un archivo. ¿Qué puede hacer ese grupo?',
+      context: 'Recuerda que el orden dentro de cada bloque de tres siempre es r, w, x.',
+      options: ['Leer y escribir, pero no ejecutar', 'Solo ejecutar', 'Leer, escribir y ejecutar'],
+      correctIdx: 0,
+      explain: 'rw- tiene r y w activos, y un guion en la posición de x. El grupo puede leer y escribir el archivo, pero no ejecutarlo.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Una carpeta tiene permisos r-- para "otros" (sin x). ¿Qué pasa si alguien de "otros" intenta hacer cd a esa carpeta?',
+      context: 'Piensa en qué permiso controla específicamente la posibilidad de entrar a una carpeta.',
+      options: ['Puede entrar sin problema, porque tiene r', 'No puede entrar: le falta x', 'Puede entrar, pero no ver nada dentro'],
+      correctIdx: 1,
+      explain: 'x es el permiso que controla si puedes "entrar" a una carpeta. Sin x, cd falla aunque tengas r.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres ver los permisos de la propia carpeta proyectos (no de lo que hay dentro). Ordena las piezas.',
+      context: 'ls -l muestra el contenido de una carpeta; hace falta una opción distinta para ver los permisos de la carpeta como tal.',
+      chips: ['-r', 'ls', '-ld', 'proyectos', '-a'],
+      correctOrder: ['ls', '-ld', 'proyectos'],
+      explain: 'ls -ld proyectos muestra la línea de permisos de la carpeta "proyectos" en sí, en vez de listar los archivos que contiene.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe chmod u+x despliegue.sh y presiona Enter',
+      context: 'chmod u+x le agrega el permiso de ejecución al dueño del archivo, sin tocar los demás permisos.',
+      command: 'chmod u+x despliegue.sh',
+      output: 'permisos actualizados: -rw-r--r-- → -rwxr--r--',
+      successMsg: 'u+x agregó la x solo en el bloque del usuario.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Un archivo tiene rw-rw-rw-. Ejecutas chmod o=r archivo. ¿Cómo queda el bloque de "otros"?',
+      context: 'o=r fija el resultado final para otros, sin importar lo que tenía antes.',
+      options: ['rw- (igual que antes)', 'r-- (solo lectura)', '--- (sin ningún permiso)'],
+      correctIdx: 1,
+      explain: 'o=r fija el permiso de "otros" en exactamente r--. El signo = no suma sobre lo anterior: lo reemplaza por lo que escribas.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: '¿Qué número representa un rol con permisos r y w, pero sin x?',
+      context: 'r vale 4, w vale 2, x vale 1. Suma solo los que están activos.',
+      options: ['4', '5', '6'],
+      correctIdx: 2,
+      explain: 'r (4) + w (2) = 6. La x no está activa, así que no se suma su 1. rw- equivale siempre al número 6.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres dejar un archivo con rwx para el usuario, r-x para el grupo y sin ningún permiso para otros, usando notación numérica. Ordena las piezas.',
+      context: '7 es rwx, 5 es r-x, 0 es sin permisos. El orden siempre es usuario, grupo, otros.',
+      chips: ['chmod', '750', 'archivo', '570', '075'],
+      correctOrder: ['chmod', '750', 'archivo'],
+      explain: 'chmod 750 archivo deja al usuario con rwx (7), al grupo con r-x (5) y a otros con --- (0).'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ejecutas chmod -R 644 proyectos/, y proyectos/ contiene subcarpetas. ¿Qué problema puede causar esto?',
+      context: '644 no incluye el permiso x. Piensa en qué permiso necesita una carpeta para poder "entrarse" con cd.',
+      options: ['Ninguno, 644 es seguro para carpetas', 'Las subcarpetas quedan sin x, y nadie podrá entrar a ellas con cd', 'Los archivos de adentro se vuelven ejecutables'],
+      correctIdx: 1,
+      explain: '644 no tiene x en ningún bloque. Al aplicarlo recursivamente, las subcarpetas pierden el permiso de "entrar" (x).'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe sudo chown carlos informe.txt y presiona Enter',
+      context: 'chown le asigna un nuevo dueño a un archivo. Casi siempre necesita sudo.',
+      command: 'sudo chown carlos informe.txt',
+      output: 'propietario actualizado: ana → carlos',
+      successMsg: 'chown transfiere la propiedad del archivo a otro usuario, sin tocar sus permisos rwx.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ejecutas chown carlos:diseño informe.txt. ¿Qué cambia exactamente?',
+      context: 'Antes de los dos puntos va el dueño; después, el grupo.',
+      options: ['Solo cambia el dueño a carlos', 'Cambia el dueño a carlos y el grupo a diseño', 'Cambia el grupo a carlos y el dueño a diseño'],
+      correctIdx: 1,
+      explain: 'El nombre antes de los dos puntos es siempre el nuevo dueño; el que sigue después es el nuevo grupo.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: '¿Cuál de estos comandos cambia SOLO el grupo de logo.png a diseño, sin tocar al dueño?',
+      context: 'Ten cuidado: uno de ellos en realidad intenta cambiar el dueño.',
+      options: ['chown diseño logo.png', 'chgrp diseño logo.png', 'chmod diseño logo.png'],
+      correctIdx: 1,
+      explain: 'chgrp diseño logo.png cambia únicamente el grupo. chown diseño logo.png es un error común: sin los dos puntos, chown interpreta "diseño" como el nuevo dueño.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ejecutas chown carlos informe.txt sin sudo, y no eres root. ¿Qué pasa?',
+      context: 'Cambiar el dueño de un archivo hacia otra persona es una operación delicada.',
+      options: ['Funciona sin problema', 'Te da un error de permiso: no está permitido', 'Cambia el grupo en vez del dueño'],
+      correctIdx: 1,
+      explain: 'Solo root puede transferir un archivo a otro dueño. Un usuario normal sin sudo recibe un error de "Operation not permitted".'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Necesitas privilegios de administrador para que backup.tar le pertenezca al usuario carlos y al grupo copias, en un solo comando. Ordena las piezas.',
+      context: 'chown acepta dueño y grupo juntos, separados por dos puntos, y hace falta elevar privilegios.',
+      chips: ['sudo', 'chown', 'carlos:copias', 'backup.tar', 'chgrp'],
+      correctOrder: ['sudo', 'chown', 'carlos:copias', 'backup.tar'],
+      explain: 'sudo chown carlos:copias backup.tar eleva tus privilegios y cambia dueño y grupo en un solo paso.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ejecutas sudo chown -R carlos proyecto/, y proyecto/ contiene varias subcarpetas y archivos. ¿Qué pasa?',
+      context: 'Piensa en qué significa "recursivo" para una carpeta con contenido adentro.',
+      options: ['Solo cambia el dueño de la carpeta proyecto, no de lo que contiene', 'El nuevo dueño se aplica a la carpeta y a todo lo que hay dentro', 'Falla porque -R no existe para chown'],
+      correctIdx: 1,
+      explain: '-R hace que el cambio de dueño se propague a cada subcarpeta y archivo dentro de proyecto/, no solo a la carpeta en sí.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe ls -l script.sh y presiona Enter',
+      context: 'ls -l muestra la cadena completa de permisos, dueño y grupo de un archivo.',
+      command: 'ls -l script.sh',
+      output: '-rwxr-xr-- 1 ana equipo 512 script.sh',
+      successMsg: 'rwx para ana (usuario), r-x para equipo (grupo), r-- para el resto (otros).'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ejecutas ls -l y ves lrwxrwxrwx en vez de un guion o una "d" al inicio. ¿Qué tipo de elemento es?',
+      context: 'El primer carácter indica el tipo: guion para archivo, "d" para carpeta, y una tercera opción.',
+      options: ['Un archivo normal muy permisivo', 'Un enlace simbólico (link) a otro archivo', 'Una carpeta oculta'],
+      correctIdx: 1,
+      explain: 'La "l" al inicio identifica un enlace simbólico: un acceso directo que apunta a otro archivo o carpeta.'
+    }
+  ];
+
   const unitData = {
     1: {
       title: 'Fundamentos', icon: 'linux', subtitle: 'Unidad 1 · Nivel 1',
@@ -4513,8 +4930,8 @@
         { title: 'Propietarios y grupos', sub: 'usuario, grupo, otros', status: 'active', icon: 'user', exercises: propietariosLessonSteps },
         { title: 'Permisos rwx', sub: 'lectura, escritura, ejecución', status: 'active', icon: 'lock', exercises: permisosLessonSteps },
         { title: 'chmod', sub: 'notación numérica y simbólica', status: 'active', icon: 'folder', exercises: chmodLessonSteps },
-        { title: 'chown y chgrp', sub: 'cambiar propietario y grupo', status: 'active', icon: 'refresh' },
-        { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
+        { title: 'chown y chgrp', sub: 'cambiar propietario y grupo', status: 'active', icon: 'refresh', exercises: chownLessonSteps },
+        { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoPermisosLessonSteps },
         { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
       ]
     },
@@ -5424,7 +5841,7 @@
           <div class="mini-term-body">
             <div class="mini-term-line">
               <span class="mini-term-prompt">~$</span>
-              <input type="text" class="mini-term-input" id="autocomplete-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Escribe el comando y presiona Tab para autocompletar">
+              <input type="text" class="mini-term-input" id="autocomplete-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Escribe el comando completo">
             </div>
             <div class="mini-term-output" id="autocomplete-output"></div>
           </div>
@@ -5494,7 +5911,7 @@
             state.hearts = Math.max(0, state.hearts - 1);
             updateHeartsDisplay();
           }
-          const errorExplain = ex.hint || ex.context || 'Revisa el prefijo e intenta autocompletar de nuevo con Tab.';
+          const errorExplain = ex.hint || ex.context || 'Revisa el prefijo e intenta de nuevo.';
           const heartMsg = heartLost
             ? ' <span style="color:var(--red)">-1 &#10084;</span>'
             : ' (primer intento, sin penalización)';
