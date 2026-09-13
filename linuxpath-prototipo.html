@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LinuxPath</title>
+<link rel="icon" type="image/png" href="img/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -369,6 +370,7 @@
 
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; letter-spacing: -0.2px; }
   .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .brand-logo { width: 32px; height: 32px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
 
   .stats { display: flex; align-items: center; gap: 14px; }
   .stat-pill {
@@ -575,6 +577,14 @@
     max-width: 100px;
     margin: 0 auto;
     transition: transform 0.15s ease;
+    /* Anula el relieve tipo "tecla física" que aplica la regla global
+       de <button> (var(--relief-up-sm)): en este botón, al ser tan
+       grande como toda la tarjeta (título + placa), se veía como un
+       cuadro oscuro semitransparente detrás de todo el nodo. */
+    box-shadow: none;
+  }
+  .level-node:active {
+    box-shadow: none !important;
   }
 
   /* ---- RELIEVE (efecto "tecla fisica"): una capa solida del color de
@@ -712,59 +722,46 @@
   .level-node:hover .node-shape.active { transform: scale(1.07); }
   .level-node:active .node-shape { transform: scale(0.94); }
 
-  .node-shape.done { background: transparent; border-color: var(--green); color: var(--green); }
-  .node-shape.active { background: transparent; border-color: var(--green); color: var(--green); box-shadow: 0 0 0 4px var(--green-deep); }
-  /* Los estados con más peso (completado, activo) llevan relleno tenue en
-     el ícono, como ya hace el corazón, para reforzar su jerarquía visual. */
-  .node-shape.done .icon, .node-shape.active .icon { fill: currentColor; fill-opacity: 0.16; }
+  .node-shape.done { background: rgba(79,255,180,0.3); border-color: var(--green); color: var(--green); }
+  .node-shape.active { background: var(--green-deep); border-color: var(--green); color: var(--green); box-shadow: 0 0 0 4px var(--green-deep); }
+  /* Completado: fondo semitransparente con el color vivo del tema
+     (~30% opacidad), siempre visible sobre el oscuro de la app, sin caer
+     en un sólido opaco. Ícono y borde se quedan en el color vivo, no en
+     tinta oscura, porque a esta opacidad ya contrasta bien. Activo
+     conserva su relleno "deep" + halo, como marca de "lección en curso". */
+  .node-shape.active .icon { fill: currentColor; fill-opacity: 0.16; }
+  /* El contorno del ícono ya hereda currentColor al 100% via .icon, pero
+     a este tamaño (24px) un stroke de 1.8 se pierde contra el fondo
+     semitransparente del mismo color: lo engrosamos solo en el estado
+     completado para que se note con claridad. */
+  .node-shape.done .icon { fill: currentColor; fill-opacity: 0.65; stroke-width: 2.6; }
   .level-node:hover .node-shape.active { box-shadow: 0 0 0 4px var(--green-deep), 0 0 26px -2px rgba(79,255,180,0.55); }
   .level-node:hover .node-shape.done { box-shadow: 0 0 22px -4px rgba(79,255,180,0.45); }
   .node-shape.locked { background: var(--bg-elevated); border-color: var(--border); color: var(--text-faint); }
 
   /* Cada nivel usa el color de su tema (definido en el array `levels`) en
      vez de que todo el camino sea verde: refuerza la sensación de mundos
-     distintos, como en Duolingo. */
-  .node-shape.c-blue.done, .node-shape.c-blue.active { background: transparent; border-color: var(--blue); color: var(--blue); box-shadow: 0 0 0 4px var(--blue-deep); }
+     distintos, como en Duolingo. Completado = relleno semitransparente
+     notorio (~30% opacidad); activo = relleno "deep" tenue + halo. */
+  .node-shape.c-blue.done { background: rgba(76,216,255,0.3); border-color: var(--blue); color: var(--blue); }
+  .node-shape.c-blue.active { background: var(--blue-deep); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 0 4px var(--blue-deep); }
   .level-node:hover .node-shape.c-blue.active { box-shadow: 0 0 0 4px var(--blue-deep), 0 0 26px -2px rgba(76,216,255,0.5); }
   .level-node:hover .node-shape.c-blue.done { box-shadow: 0 0 22px -4px rgba(76,216,255,0.4); }
 
-  .node-shape.c-purple.done, .node-shape.c-purple.active { background: transparent; border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px var(--purple-deep); }
+  .node-shape.c-purple.done { background: rgba(201,123,255,0.3); border-color: var(--purple); color: var(--purple); }
+  .node-shape.c-purple.active { background: var(--purple-deep); border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px var(--purple-deep); }
   .level-node:hover .node-shape.c-purple.active { box-shadow: 0 0 0 4px var(--purple-deep), 0 0 26px -2px rgba(201,123,255,0.5); }
   .level-node:hover .node-shape.c-purple.done { box-shadow: 0 0 22px -4px rgba(201,123,255,0.4); }
 
-  .node-shape.c-orange.done, .node-shape.c-orange.active { background: transparent; border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 4px var(--orange-deep); }
+  .node-shape.c-orange.done { background: rgba(255,180,84,0.3); border-color: var(--orange); color: var(--orange); }
+  .node-shape.c-orange.active { background: var(--orange-deep); border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 4px var(--orange-deep); }
   .level-node:hover .node-shape.c-orange.active { box-shadow: 0 0 0 4px var(--orange-deep), 0 0 26px -2px rgba(255,180,84,0.5); }
   .level-node:hover .node-shape.c-orange.done { box-shadow: 0 0 22px -4px rgba(255,180,84,0.4); }
 
-  .node-shape.c-red.done, .node-shape.c-red.active { background: transparent; border-color: var(--red); color: var(--red); box-shadow: 0 0 0 4px var(--red-deep); }
+  .node-shape.c-red.done { background: rgba(255,93,122,0.3); border-color: var(--red); color: var(--red); }
+  .node-shape.c-red.active { background: var(--red-deep); border-color: var(--red); color: var(--red); box-shadow: 0 0 0 4px var(--red-deep); }
   .level-node:hover .node-shape.c-red.active { box-shadow: 0 0 0 4px var(--red-deep), 0 0 26px -2px rgba(255,93,122,0.5); }
   .level-node:hover .node-shape.c-red.done { box-shadow: 0 0 22px -4px rgba(255,93,122,0.4); }
-
-  /* Anillo pulsante detrás del nodo activo: marca visualmente "aquí estás"
-     dentro del camino, como el marcador de posición actual en un mapa.
-     Ahora es un rectángulo redondeado (no un círculo) para acompañar la
-     forma de placa de terminal del nodo. */
-  .node-pulse-ring {
-    position: absolute;
-    bottom: 14px; left: 50%;
-    width: 76px; height: 68px;
-    transform: translateX(-50%);
-    border-radius: 14px;
-    border: 2px solid var(--green);
-    opacity: 0;
-    animation: nodePulse 2.2s ease-out infinite;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .node-pulse-ring.c-blue { border-color: var(--blue); }
-  .node-pulse-ring.c-purple { border-color: var(--purple); }
-  .node-pulse-ring.c-orange { border-color: var(--orange); }
-  .node-pulse-ring.c-red { border-color: var(--red); }
-  @keyframes nodePulse {
-    0% { transform: translateX(-50%) scale(0.85); opacity: 0.5; }
-    75% { transform: translateX(-50%) scale(1.3); opacity: 0; }
-    100% { transform: translateX(-50%) scale(1.3); opacity: 0; }
-  }
 
   .node-label {
     margin-bottom: 8px;
@@ -774,6 +771,15 @@
     text-align: center;
     max-width: 90px;
   }
+  /* Nodo completado: el título toma el color del nivel (igual que el
+     borde y el ícono de su node-shape), en vez de quedarse en gris. */
+  .node-label.c-green { color: var(--green); }
+  .node-label.c-blue { color: var(--blue); }
+  .node-label.c-purple { color: var(--purple); }
+  .node-label.c-orange { color: var(--orange); }
+  .node-label.c-red { color: var(--red); }
+  /* El nodo activo sigue destacando en blanco, por encima del color
+     de nivel (por eso esta regla va después y sin encadenar clase). */
   .node-label.active-label { color: var(--text); }
 
   /* ---- NODO "DESAFÍO FINAL": tarjeta más grande y centrada (sin
@@ -788,29 +794,12 @@
   }
   .final-badge { display: flex; align-items: center; justify-content: center; }
   .final-badge svg.icon { width: 26px; height: 26px; }
-  .final-node-title { font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif; color: var(--text); }
+  /* El título toma el color del nodo (verde/azul/morado/naranja/rojo
+     según la unidad y el estado done/active, heredado de .node-shape a
+     través de currentColor) en vez de quedarse en un blanco apagado,
+     para que se note bien tanto en el estado activo como completado. */
+  .final-node-title { font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif; color: currentColor; }
   .final-node-intro { font-size: 12.5px; font-weight: 500; line-height: 1.45; font-family: 'Inter', sans-serif; color: var(--text-dim); }
-
-  /* Gema decorativa entre nodos del camino: pequeño hito visual que se
-     "enciende" cuando ya superaste el nivel anterior. */
-  .path-gem {
-    position: relative;
-    z-index: 1;
-    width: 22px; height: 22px;
-    margin: -2px 0;
-    border-radius: 50%;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-faint);
-    flex-shrink: 0;
-  }
-  .path-gem.earned {
-    background: var(--green-deep);
-    border-color: var(--green-dark);
-    color: var(--green);
-  }
-  .path-gem .icon { fill: currentColor; }
 
   .path-cap {
     z-index: 1;
@@ -1389,11 +1378,15 @@
     border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
   }
   .po-check-btn:disabled { opacity: 0.4; cursor: default; }
-  /* Override final: la cajita/panel detrás del ícono del nodo debe ser
-     siempre transparente, sin importar el estado o color. !important
-     para que gane sobre cualquier otra regla. */
-  .node-shape, .node-shape.done, .node-shape.active,
-  .node-shape.c-blue, .node-shape.c-purple, .node-shape.c-orange, .node-shape.c-red {
+  /* Override final: la cajita/panel detrás del ícono del nodo debe
+     quedar transparente en los estados "activo" y "bloqueado" (sin
+     importar el color de unidad), pero el nodo COMPLETADO queda fuera
+     de este override a propósito: necesita su fondo sólido de color
+     (ver reglas .node-shape.done / .c-*.done más arriba) para
+     notarse de un vistazo. !important para que gane sobre cualquier
+     otra regla salvo esta exclusión explícita. */
+  .node-shape.active, .node-shape.locked,
+  .node-shape.c-blue.active, .node-shape.c-purple.active, .node-shape.c-orange.active, .node-shape.c-red.active {
     background: transparent !important;
   }
   .node-relief { display: none !important; }
@@ -1411,7 +1404,7 @@
   <div id="app-main">
 
   <div class="topbar">
-    <a class="brand" href="index.html"><span class="dot"></span>LinuxPath</a>
+    <a class="brand" href="index.html"><img src="img/logo.png" alt="LinuxPath" class="brand-logo">LinuxPath</a>
     <nav class="side-nav" aria-label="Navegación">
       <span class="side-nav-item active" aria-current="page" title="Ruta">
         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>
@@ -5915,6 +5908,90 @@
     }
   ];
 
+  const desafioProcesosLessonSteps = [
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Sin instrucciones, solo la meta',
+      prompt: 'Un proceso llamado backup.sh quedó colgado y está consumiendo casi toda la CPU del servidor. Vas a identificarlo y detenerlo, todo en la misma sesión de terminal.',
+      context: 'No hay pasos sueltos: primero necesitas encontrarlo antes de poder actuar sobre él.',
+      successMsg: '¡Resuelto! Encontraste el proceso problemático y escalaste a la señal correcta cuando la primera petición no funcionó, sin que nadie te dijera los comandos exactos.',
+      steps: [
+        {
+          goal: 'Antes de actuar, revisa la lista completa de procesos del sistema para ver cuál está consumiendo más CPU.',
+          command: 'ps aux',
+          output: 'USER   PID %CPU %MEM    VSZ   RSS TTY  STAT START   TIME COMMAND\nroot     1  0.0  0.1  16932  1112 ?    Ss   09:03   0:01 /sbin/init\nuser  2417  0.0  0.2  21456  4820 pts/0 Ss  09:10   0:00 bash\nuser  6603 97.4  1.1  30512  9820 ?    R    10:02   4:12 backup.sh',
+          hint: 'El comando que lista todos los procesos del sistema, con columnas de %CPU y %MEM incluidas.',
+          tabCandidates: ['ps', 'aux']
+        },
+        {
+          goal: 'Ya viste el PID en la lista anterior. Pide, de forma ordenada, que ese proceso termine por su cuenta.',
+          command: 'kill 6603',
+          output: '(sin respuesta: el proceso sigue apareciendo con el mismo PID)',
+          hint: 'El comando que envía una señal a un proceso identificándolo por su PID, sin especificar ninguna señal en particular.',
+          tabCandidates: ['kill', '6603']
+        },
+        {
+          goal: 'El proceso ignoró la petición anterior. Confirma que sigue corriendo antes de decidir qué hacer.',
+          command: 'ps aux | grep backup.sh',
+          output: 'user  6603 97.6  1.1  30512  9820 ?    R    10:02   4:45 backup.sh\nuser  6702  0.0  0.0   7488   840 pts/0 S+   10:06   0:00 grep --color=auto backup.sh',
+          hint: 'El comando para listar procesos, combinado con un filtro para quedarte solo con el nombre que buscas.',
+          tabCandidates: ['ps', 'aux', 'grep', 'backup.sh']
+        },
+        {
+          goal: 'Ya que ignoró la petición ordinaria, fuerza su terminación inmediata sin darle más oportunidades de reaccionar.',
+          command: 'kill -9 6603',
+          output: '[1]+  Killed                  backup.sh',
+          hint: 'El comando para terminar procesos, con la opción que envía la señal que ningún proceso puede ignorar.',
+          tabCandidates: ['kill', '-9', '6603']
+        },
+        {
+          goal: 'Verifica que ya no queda ningún rastro de backup.sh corriendo.',
+          command: 'ps aux | grep backup.sh',
+          output: 'user  6810  0.0  0.0   7488   840 pts/0 S+   10:08   0:00 grep --color=auto backup.sh',
+          hint: 'El mismo comando que usaste para confirmar que seguía corriendo.',
+          tabCandidates: ['ps', 'aux', 'grep', 'backup.sh']
+        }
+      ]
+    },
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Sin instrucciones, solo la meta',
+      prompt: 'Sin darte cuenta, lanzaste el mismo script de sincronización varias veces en segundo plano y ahora compiten entre sí. Vas a revisar qué quedó corriendo y terminarlo todo de una sola vez, sin afectar el resto de tu sesión.',
+      context: 'Vas a necesitar revisar tanto los trabajos de tu sesión como los procesos del sistema antes de actuar.',
+      successMsg: '¡Perfecto! Revisaste tus trabajos en segundo plano y los procesos del sistema, y los terminaste todos de una sola vez sin buscar cada PID por separado.',
+      steps: [
+        {
+          goal: 'Revisa qué trabajos quedaron corriendo en segundo plano dentro de tu sesión actual.',
+          command: 'jobs',
+          output: '[1]-  Running                 sync.sh &\n[2]+  Running                 sync.sh &\n[3]   Running                 sync.sh &',
+          hint: 'El comando que lista los trabajos en segundo plano de tu sesión actual.',
+          tabCandidates: ['jobs']
+        },
+        {
+          goal: 'Confirma cuántos procesos llamados sync.sh hay corriendo en todo el sistema, no solo en tu sesión.',
+          command: 'ps aux | grep sync.sh',
+          output: 'user  7011  2.1  0.4  18320  3200 pts/0 S    11:14   0:02 sync.sh\nuser  7014  2.0  0.4  18320  3180 pts/0 S    11:14   0:02 sync.sh\nuser  7017  2.2  0.4  18320  3210 pts/0 S    11:14   0:02 sync.sh\nuser  7101  0.0  0.0   7488   840 pts/0 S+   11:16   0:00 grep --color=auto sync.sh',
+          hint: 'El comando para listar todos los procesos del sistema, combinado con un filtro por nombre.',
+          tabCandidates: ['ps', 'aux', 'grep', 'sync.sh']
+        },
+        {
+          goal: 'En vez de terminar cada PID por separado, termina de una sola vez todos los procesos que se llamen sync.sh.',
+          command: 'pkill sync.sh',
+          output: '',
+          hint: 'El comando que termina procesos identificándolos por nombre en vez de por PID.',
+          tabCandidates: ['pkill', 'sync.sh']
+        },
+        {
+          goal: 'Verifica que ya no queda ningún sync.sh corriendo, ni como trabajo de tu sesión ni como proceso del sistema.',
+          command: 'jobs',
+          output: '[1]-  Terminated              sync.sh\n[2]+  Terminated              sync.sh\n[3]   Terminated              sync.sh',
+          hint: 'El mismo comando que usaste al principio para ver los trabajos de tu sesión.',
+          tabCandidates: ['jobs']
+        }
+      ]
+    }
+  ];
+
   const unitData = {
     1: {
       title: 'Fundamentos', icon: 'linux', subtitle: 'Unidad 1 · Nivel 1',
@@ -5957,7 +6034,7 @@
         { title: 'Segundo plano', sub: '&, jobs, fg, bg', status: 'active', icon: 'loop', exercises: segundoPlanoLessonSteps },
         { title: 'Terminar procesos', sub: 'kill y las señales comunes', status: 'active', icon: 'stop', exercises: terminarProcesosLessonSteps },
         { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoProcesosLessonSteps },
-        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true, intro: 'Sin pistas paso a paso: combina lo que aprendiste sobre ver, manejar en segundo plano y terminar procesos para resolver dos situaciones reales de principio a fin.', exercises: desafioProcesosLessonSteps },
       ]
     },
     5: {
@@ -6244,29 +6321,16 @@
       node.onclick = () => openTopicSheet(level.id);
 
       const shapeClass = level.status === 'active' ? 'active' : (level.status === 'done' ? 'done' : 'locked');
-      const labelClass = level.status === 'active' ? 'active-label' : '';
       const colorClass = level.status === 'locked' ? '' : ('c-' + level.color);
+      const labelClass = (level.status === 'active' ? 'active-label ' : '') + (level.status !== 'locked' ? colorClass : '');
 
       node.innerHTML = `
-        ${(level.status === 'active' && level === firstActiveLevel) ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
         <div class="node-label ${labelClass}">${level.title}</div>
         <div class="node-relief ${shapeClass} ${colorClass}"></div>
         <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div></div>
       `;
       container.appendChild(node);
 
-      // Checkpoint decorativo entre niveles: una gema que solo se ve
-      // "activada" (con color) si ya superaste el nivel anterior en el
-      // recorrido. Puramente visual, no afecta el progreso real.
-      const isLast = i === levels.length - 1;
-      if (!isLast) {
-        const gem = document.createElement('div');
-        const earned = level.status === 'done';
-        gem.className = 'path-gem' + (earned ? ' earned' : '');
-        gem.setAttribute('aria-hidden', 'true');
-        gem.innerHTML = ICONS.sparkle;
-        container.appendChild(gem);
-      }
     });
 
     const start = document.createElement('div');
@@ -6301,8 +6365,8 @@
     if (lesson.status === 'locked') node.setAttribute('tabindex', '-1');
 
     const shapeClass = lesson.status === 'active' ? 'active' : (lesson.status === 'done' ? 'done' : 'locked');
-    const labelClass = lesson.status === 'active' ? 'active-label' : '';
     const shapeColorClass = lesson.status === 'locked' ? '' : colorClass;
+    const labelClass = (lesson.status === 'active' ? 'active-label ' : '') + shapeColorClass;
 
     if (isFinal) {
       node.innerHTML = `
@@ -6316,7 +6380,6 @@
       `;
     } else {
       node.innerHTML = `
-        ${(lesson.status === 'active' && isCurrent) ? '<span class="node-pulse-ring ' + shapeColorClass + '"></span>' : ''}
         <div class="node-label ${labelClass}">${lesson.title}</div>
         <div class="node-relief ${shapeClass} ${shapeColorClass}"></div>
         <div class="node-shape ${shapeClass} ${shapeColorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
@@ -6395,15 +6458,6 @@
         container.appendChild(banner);
       }
 
-      const isLast = i === orderedItems.length - 1;
-      if (!isLast) {
-        const gem = document.createElement('div');
-        const earned = lesson.status === 'done';
-        gem.className = 'path-gem' + (earned ? ' earned' : '');
-        gem.setAttribute('aria-hidden', 'true');
-        gem.innerHTML = ICONS.sparkle;
-        container.appendChild(gem);
-      }
     });
 
     const start = document.createElement('div');
@@ -6411,7 +6465,7 @@
     start.innerHTML = '<span class="icon-wrap">' + ICONS.linux + '</span><span>Comenzar</span>';
     container.appendChild(start);
 
-    const connectorItems = orderedItems.map(item => ({ status: item.lesson.status, color: item.unitColor }));
+    const connectorItems = orderedItems.map(item => ({ status: item.lesson.status, color: item.unitColor, final: item.lesson.final }));
     requestAnimationFrame(() => drawPathConnectors(container, svg, connectorItems));
   }
 
@@ -6438,7 +6492,9 @@
       const r = shape.getBoundingClientRect();
       return {
         x: r.left + r.width / 2 - rect.left,
-        y: r.top + r.height / 2 - rect.top
+        y: r.top + r.height / 2 - rect.top,
+        halfWidth: r.width / 2,
+        halfHeight: r.height / 2
       };
     });
 
@@ -6449,8 +6505,32 @@
       const earned = item.status === 'done';
       const color = earned ? `var(${colorVar[item.color] || '--green'})` : 'var(--border)';
 
-      const midY = (from.y + to.y) / 2;
-      const d = `M ${from.x} ${from.y} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y}`;
+      // El trazo conecta las ESQUINAS del node-shape en los nodos
+      // normales, que sí tienen su título centrado justo encima de la
+      // caja (misma columna que antes usaba el trazo vertical): entrar
+      // por un lado lo esquiva. Los "Desafío final" son distintos -su
+      // título va DENTRO de la tarjeta, no arriba- así que ahí no hay
+      // nada que esquivar y usamos el punto de arriba/abajo de siempre,
+      // centrado (si no, con una tarjeta tan ancha la esquina quedaría
+      // desplazada un montón de píxeles de más).
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const signX = dx === 0 ? 1 : Math.sign(dx);
+      const signY = dy === 0 ? -1 : Math.sign(dy);
+      const totalGap = Math.abs(dy) || 1;
+      const clearFrom = Math.min(from.halfHeight, totalGap * 0.45);
+      const clearTo = Math.min(to.halfHeight, totalGap * 0.45);
+      const fromFinal = !!item.final;
+      const toFinal = !!(orderedItems[i + 1] && orderedItems[i + 1].final);
+      const start = fromFinal
+        ? { x: from.x, y: from.y + signY * clearFrom }
+        : { x: from.x + signX * from.halfWidth, y: from.y + signY * clearFrom };
+      const end = toFinal
+        ? { x: to.x, y: to.y - signY * clearTo }
+        : { x: to.x - signX * to.halfWidth, y: to.y - signY * clearTo };
+
+      const midY = (start.y + end.y) / 2;
+      const d = `M ${start.x} ${start.y} C ${start.x} ${midY}, ${end.x} ${midY}, ${end.x} ${end.y}`;
 
       // Halo suave detrás del trazo principal: mismo trayecto, más ancho
       // y translúcido, solo en tramos ya superados, para dar profundidad.
@@ -6590,15 +6670,6 @@
       const node = createLessonNode(lesson, i % 2 === 0 ? 'left' : 'right', unitColorClass, () => startLesson(originalIdx), lesson === firstActiveLesson);
       container.appendChild(node);
 
-      const isLast = i === orderedLessons.length - 1;
-      if (!isLast) {
-        const gem = document.createElement('div');
-        const earned = lesson.status === 'done';
-        gem.className = 'path-gem' + (earned ? ' earned' : '');
-        gem.setAttribute('aria-hidden', 'true');
-        gem.innerHTML = ICONS.sparkle;
-        container.appendChild(gem);
-      }
     });
 
     const startCap = document.createElement('div');
@@ -6606,7 +6677,7 @@
     startCap.innerHTML = '<span class="icon-wrap">' + ICONS[u.icon] + '</span><span>Comenzar</span>';
     container.appendChild(startCap);
 
-    const orderedItems = orderedLessons.map(l => ({ status: l.status, color: unitColorKey }));
+    const orderedItems = orderedLessons.map(l => ({ status: l.status, color: unitColorKey, final: l.final }));
     requestAnimationFrame(() => drawPathConnectors(container, svg, orderedItems));
   }
 
