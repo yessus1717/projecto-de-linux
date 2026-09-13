@@ -48,6 +48,27 @@
 
   a { color: inherit; text-decoration: none; }
 
+  /* ---- RELIEVE (sombra fisica sutil para botones y elementos interactivos) ---- */
+  :root {
+    --relief-up: 0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 0 rgba(0,0,0,0.35), 0 5px 10px -3px rgba(0,0,0,0.45);
+    --relief-up-sm: 0 1px 0 rgba(255,255,255,0.05) inset, 0 1px 0 rgba(0,0,0,0.35), 0 3px 6px -2px rgba(0,0,0,0.4);
+    --relief-down: 0 1px 2px rgba(0,0,0,0.4) inset, 0 1px 0 rgba(0,0,0,0.2);
+  }
+  .btn-primary, .btn-secondary, .nav-cta, .nav-user,
+  .flow-icon-wrap, .path-item-icon, .feature-icon,
+  .term-quiz-opt, .topic-modal-close, .topic-modal-icon,
+  .topic-modal-lesson-num, .term-hint, .stat-block {
+    box-shadow: var(--relief-up-sm);
+  }
+  .btn-primary, .btn-secondary, .nav-cta,
+  .feature-card, .path-item, .topic-modal, .hero-visual, .term-quiz {
+    box-shadow: var(--relief-up);
+  }
+  .btn-primary:active, .btn-secondary:active, .nav-cta:active, .nav-user:active,
+  .path-item:active, .term-quiz-opt:active, .topic-modal-close:active {
+    box-shadow: var(--relief-down) !important;
+  }
+
   /* Focus visibility for keyboard users, without adding an outline ring to mouse clicks */
   a:focus-visible,
   button:focus-visible,
@@ -542,6 +563,17 @@
 
     var meta = session.user.user_metadata || {};
     var name = meta.display_name || meta.full_name || meta.name || session.user.email.split('@')[0];
+
+    // Nombre de usuario "estilo Linux" (mismo criterio que el prototipo):
+    // minúsculas, sin acentos ni espacios, para que la demo de terminal
+    // de la landing muestre tu usuario real en vez del genérico "user".
+    var linuxUser = name.trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '') || 'user';
+    window.LP_USERNAME = linuxUser;
+    var termLabel = document.getElementById('term-user-label');
+    if (termLabel) termLabel.textContent = linuxUser + '@linuxpath: ~';
+
     var avatarUrl = meta.avatar_url || meta.picture || '';
     var initial = name.trim().charAt(0).toUpperCase();
 
@@ -607,7 +639,7 @@
         <div class="term-dot" style="background:#FF5F57"></div>
         <div class="term-dot" style="background:#FEBC2E"></div>
         <div class="term-dot" style="background:#28C840"></div>
-        <span>user@linuxpath: ~</span>
+        <span id="term-user-label">user@linuxpath: ~</span>
       </div>
       <div class="term-body" id="term-body">
         <div id="term-output"></div>
@@ -677,7 +709,7 @@
     <div class="section-head">
       <div class="eyebrow">Ruta de aprendizaje</div>
       <h2>De cero a administrador de sistemas</h2>
-      <p>Nueve niveles pensados para ir de "nunca abrí una terminal" a moverte con soltura en cualquier distribución.</p>
+      <p>Cinco niveles pensados para ir de "nunca abrí una terminal" a moverte con soltura en cualquier distribución.</p>
     </div>
     <div class="path-preview">
       <button type="button" class="path-item" onclick="openTopicModal(1)">
@@ -769,7 +801,7 @@
 <section>
   <div class="wrap">
     <div class="stats-band">
-      <div class="stat-block"><div class="num">9</div><div class="lbl">Niveles de contenido</div></div>
+      <div class="stat-block"><div class="num">5</div><div class="lbl">Niveles de contenido</div></div>
       <div class="stat-block"><div class="num">2 min</div><div class="lbl">Duración por lección</div></div>
       <div class="stat-block"><div class="num">0</div><div class="lbl">Requisitos previos</div></div>
       <div class="stat-block"><div class="num">100%</div><div class="lbl">Gratis por ahora</div></div>
@@ -811,14 +843,15 @@
         '  echo <texto>   repite el texto';
     },
     pwd: function () {
-      return fs.cwd === '~' ? '/home/user' : '/home/user/' + fs.cwd.replace('~/', '');
+      var u = window.LP_USERNAME || 'user';
+      return fs.cwd === '~' ? '/home/' + u : '/home/' + u + '/' + fs.cwd.replace('~/', '');
     },
     ls: function () {
       var items = fs.dirs[fs.cwd] || [];
       return items.length ? items.join('  ') : '(carpeta vacía)';
     },
     whoami: function () {
-      return 'user';
+      return window.LP_USERNAME || 'user';
     },
     echo: function (args) {
       return args.join(' ');
@@ -1030,7 +1063,8 @@
         { title: 'La terminal', sub: 'Tu herramienta principal', done: true },
         { title: 'Navegación', sub: 'pwd, ls, cd', done: false },
         { title: 'Archivos', sub: 'crear y organizar', done: false },
-        { title: 'Repaso', sub: 'Pon todo en práctica', done: false }
+        { title: 'Repaso', sub: 'Pon todo en práctica', done: false },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', done: false }
       ]
     },
     2: {
@@ -1040,7 +1074,8 @@
         { title: 'Buscar archivos', sub: 'find y locate', done: false },
         { title: 'Buscar texto', sub: 'grep y expresiones básicas', done: false },
         { title: 'Historial y atajos', sub: 'history, Ctrl+R, autocompletado', done: false },
-        { title: 'Repaso', sub: 'Pon todo en práctica', done: false }
+        { title: 'Repaso', sub: 'Pon todo en práctica', done: false },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', done: false }
       ]
     },
     3: {
@@ -1050,7 +1085,8 @@
         { title: 'Permisos rwx', sub: 'lectura, escritura, ejecución', done: false },
         { title: 'chmod', sub: 'notación numérica y simbólica', done: false },
         { title: 'chown y chgrp', sub: 'cambiar propietario y grupo', done: false },
-        { title: 'Repaso', sub: 'Pon todo en práctica', done: false }
+        { title: 'Repaso', sub: 'Pon todo en práctica', done: false },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', done: false }
       ]
     },
     4: {
@@ -1060,7 +1096,8 @@
         { title: 'Ver procesos', sub: 'ps y top', done: false },
         { title: 'Segundo plano', sub: '&, jobs, fg, bg', done: false },
         { title: 'Terminar procesos', sub: 'kill y las señales comunes', done: false },
-        { title: 'Repaso', sub: 'Pon todo en práctica', done: false }
+        { title: 'Repaso', sub: 'Pon todo en práctica', done: false },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', done: false }
       ]
     },
     5: {
@@ -1070,7 +1107,8 @@
         { title: 'ping y traceroute', sub: 'probar conectividad', done: false },
         { title: 'curl y wget', sub: 'peticiones desde la terminal', done: false },
         { title: 'ssh básico', sub: 'conectarte a otra máquina', done: false },
-        { title: 'Repaso', sub: 'Pon todo en práctica', done: false }
+        { title: 'Repaso', sub: 'Pon todo en práctica', done: false },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', done: false }
       ]
     }
   };

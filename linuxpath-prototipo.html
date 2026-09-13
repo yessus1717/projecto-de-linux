@@ -106,6 +106,21 @@
     vertical-align: -3px;
   }
 
+  /* ---- RELIEVE (sombra fisica sutil para botones; aplicado de forma
+     conservadora aqui porque este archivo tiene muchos componentes
+     que no revisamos uno a uno) ---- */
+  :root {
+    --relief-up: 0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 0 rgba(0,0,0,0.35), 0 5px 10px -3px rgba(0,0,0,0.45);
+    --relief-up-sm: 0 1px 0 rgba(255,255,255,0.05) inset, 0 1px 0 rgba(0,0,0,0.35), 0 3px 6px -2px rgba(0,0,0,0.4);
+    --relief-down: 0 1px 2px rgba(0,0,0,0.4) inset, 0 1px 0 rgba(0,0,0,0.2);
+  }
+  button, .btn, .btn-primary, .btn-secondary, .btn-google {
+    box-shadow: var(--relief-up-sm);
+  }
+  button:active, .btn:active, .btn-primary:active, .btn-secondary:active, .btn-google:active {
+    box-shadow: var(--relief-down) !important;
+  }
+
   /* Focus visibility for keyboard users */
   a:focus-visible,
   button:focus-visible,
@@ -562,6 +577,22 @@
     transition: transform 0.15s ease;
   }
 
+  /* ---- RELIEVE (efecto "tecla fisica"): una capa solida del color de
+     tema justo detras del node-shape, asomando por debajo como el borde
+     grueso de un boton fisico tipo Duolingo. Vive en .level-node (no en
+     .node-shape, que tiene overflow:hidden para la barra de terminal y
+     recortaria la capa) y se posiciona con las mismas medidas fijas del
+     node-shape para quedar pegada exactamente detras de el. Al presionar
+     el nodo baja y la capa desaparece, simulando que la tecla se hundio. */
+  .node-relief {
+    display: none;
+  }
+
+  .level-node:active .node-relief {
+    transform: translate(-50%, 1px);
+    opacity: 0;
+  }
+
   /* Serpenteo estilo Duolingo: alternamos el nodo a izquierda/derecha del
      eje central en vez de apilarlos en una lista recta. La conexión
      punteada queda centrada, así que el desplazamiento es puramente visual.
@@ -681,8 +712,8 @@
   .level-node:hover .node-shape.active { transform: scale(1.07); }
   .level-node:active .node-shape { transform: scale(0.94); }
 
-  .node-shape.done { background: var(--green-deep); border-color: var(--green); color: var(--green); }
-  .node-shape.active { background: var(--bg-card); border-color: var(--green); color: var(--green); box-shadow: 0 0 0 4px var(--green-deep); }
+  .node-shape.done { background: transparent; border-color: var(--green); color: var(--green); }
+  .node-shape.active { background: transparent; border-color: var(--green); color: var(--green); box-shadow: 0 0 0 4px var(--green-deep); }
   /* Los estados con más peso (completado, activo) llevan relleno tenue en
      el ícono, como ya hace el corazón, para reforzar su jerarquía visual. */
   .node-shape.done .icon, .node-shape.active .icon { fill: currentColor; fill-opacity: 0.16; }
@@ -693,19 +724,19 @@
   /* Cada nivel usa el color de su tema (definido en el array `levels`) en
      vez de que todo el camino sea verde: refuerza la sensación de mundos
      distintos, como en Duolingo. */
-  .node-shape.c-blue.done, .node-shape.c-blue.active { background: var(--blue-deep); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 0 4px var(--blue-deep); }
+  .node-shape.c-blue.done, .node-shape.c-blue.active { background: transparent; border-color: var(--blue); color: var(--blue); box-shadow: 0 0 0 4px var(--blue-deep); }
   .level-node:hover .node-shape.c-blue.active { box-shadow: 0 0 0 4px var(--blue-deep), 0 0 26px -2px rgba(76,216,255,0.5); }
   .level-node:hover .node-shape.c-blue.done { box-shadow: 0 0 22px -4px rgba(76,216,255,0.4); }
 
-  .node-shape.c-purple.done, .node-shape.c-purple.active { background: var(--purple-deep); border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px var(--purple-deep); }
+  .node-shape.c-purple.done, .node-shape.c-purple.active { background: transparent; border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px var(--purple-deep); }
   .level-node:hover .node-shape.c-purple.active { box-shadow: 0 0 0 4px var(--purple-deep), 0 0 26px -2px rgba(201,123,255,0.5); }
   .level-node:hover .node-shape.c-purple.done { box-shadow: 0 0 22px -4px rgba(201,123,255,0.4); }
 
-  .node-shape.c-orange.done, .node-shape.c-orange.active { background: var(--orange-deep); border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 4px var(--orange-deep); }
+  .node-shape.c-orange.done, .node-shape.c-orange.active { background: transparent; border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 4px var(--orange-deep); }
   .level-node:hover .node-shape.c-orange.active { box-shadow: 0 0 0 4px var(--orange-deep), 0 0 26px -2px rgba(255,180,84,0.5); }
   .level-node:hover .node-shape.c-orange.done { box-shadow: 0 0 22px -4px rgba(255,180,84,0.4); }
 
-  .node-shape.c-red.done, .node-shape.c-red.active { background: var(--red-deep); border-color: var(--red); color: var(--red); box-shadow: 0 0 0 4px var(--red-deep); }
+  .node-shape.c-red.done, .node-shape.c-red.active { background: transparent; border-color: var(--red); color: var(--red); box-shadow: 0 0 0 4px var(--red-deep); }
   .level-node:hover .node-shape.c-red.active { box-shadow: 0 0 0 4px var(--red-deep), 0 0 26px -2px rgba(255,93,122,0.5); }
   .level-node:hover .node-shape.c-red.done { box-shadow: 0 0 22px -4px rgba(255,93,122,0.4); }
 
@@ -1358,6 +1389,14 @@
     border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
   }
   .po-check-btn:disabled { opacity: 0.4; cursor: default; }
+  /* Override final: la cajita/panel detrás del ícono del nodo debe ser
+     siempre transparente, sin importar el estado o color. !important
+     para que gane sobre cualquier otra regla. */
+  .node-shape, .node-shape.done, .node-shape.active,
+  .node-shape.c-blue, .node-shape.c-purple, .node-shape.c-orange, .node-shape.c-red {
+    background: transparent !important;
+  }
+  .node-relief { display: none !important; }
 </style>
 </head>
 <body>
@@ -6191,6 +6230,7 @@
     cap.innerHTML = '<span class="icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M4 18l-1-9 5 4 4-7 4 7 5-4-1 9"/></svg></span><span>Linux Pro</span>';
     container.appendChild(cap);
 
+    const firstActiveLevel = levels.find(l => l.status === 'active');
     const orderedLevels = [...levels].reverse();
     orderedLevels.forEach((level, i) => {
       const node = document.createElement('button');
@@ -6208,8 +6248,9 @@
       const colorClass = level.status === 'locked' ? '' : ('c-' + level.color);
 
       node.innerHTML = `
-        ${level.status === 'active' ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
+        ${(level.status === 'active' && level === firstActiveLevel) ? '<span class="node-pulse-ring ' + colorClass + '"></span>' : ''}
         <div class="node-label ${labelClass}">${level.title}</div>
+        <div class="node-relief ${shapeClass} ${colorClass}"></div>
         <div class="node-shape ${shapeClass} ${colorClass}"><div class="node-shape-body">${level.status === 'locked' ? ICONS.lock : ICONS[level.icon]}</div></div>
       `;
       container.appendChild(node);
@@ -6251,7 +6292,7 @@
   // como una tarjeta grande y centrada en vez del hexágono zigzagueante
   // normal, con una pequeña insignia y (si existe) una frase de
   // introducción de lesson.intro.
-  function createLessonNode(lesson, zigzagSide, colorClass, onClick) {
+  function createLessonNode(lesson, zigzagSide, colorClass, onClick, isCurrent) {
     const node = document.createElement('button');
     const isFinal = !!lesson.final;
     node.className = isFinal ? 'level-node level-node-final' : 'level-node';
@@ -6275,8 +6316,9 @@
       `;
     } else {
       node.innerHTML = `
-        ${lesson.status === 'active' ? '<span class="node-pulse-ring ' + shapeColorClass + '"></span>' : ''}
+        ${(lesson.status === 'active' && isCurrent) ? '<span class="node-pulse-ring ' + shapeColorClass + '"></span>' : ''}
         <div class="node-label ${labelClass}">${lesson.title}</div>
+        <div class="node-relief ${shapeClass} ${shapeColorClass}"></div>
         <div class="node-shape ${shapeClass} ${shapeColorClass}"><div class="node-shape-body">${lesson.status === 'locked' ? ICONS.lock : ICONS[lesson.icon]}</div></div>
       `;
     }
@@ -6316,6 +6358,13 @@
       });
     });
 
+    // Solo la primera lección activa de todo el recorrido "seguido"
+    // recibe el anillo pulsante de "aquí estás": si todas llevaran el
+    // pulso a la vez (como pasa mientras cada lección queda marcada
+    // como "active" para poder probarlas todas), el camino se llena de
+    // cuadros semitransparentes superpuestos.
+    const firstActiveItem = flatItems.find(it => it.lesson.status === 'active');
+
     // Igual que en los demás caminos, se pintan de abajo hacia arriba
     // (column-reverse), así que invertimos el orden antes de recorrer.
     const orderedItems = [...flatItems].reverse();
@@ -6327,7 +6376,7 @@
       const node = createLessonNode(lesson, i % 2 === 0 ? 'left' : 'right', colorClass, () => {
         state.currentUnit = unitId;
         startLesson(lessonIdx);
-      });
+      }, item === firstActiveItem);
       container.appendChild(node);
 
       // Banner de unidad: el contenedor usa column-reverse, así que lo
@@ -6534,10 +6583,11 @@
 
     const orderedLessons = [...u.lessons].reverse();
     const total = u.lessons.length;
+    const firstActiveLesson = u.lessons.find(l => l.status === 'active');
 
     orderedLessons.forEach((lesson, i) => {
       const originalIdx = total - 1 - i;
-      const node = createLessonNode(lesson, i % 2 === 0 ? 'left' : 'right', unitColorClass, () => startLesson(originalIdx));
+      const node = createLessonNode(lesson, i % 2 === 0 ? 'left' : 'right', unitColorClass, () => startLesson(originalIdx), lesson === firstActiveLesson);
       container.appendChild(node);
 
       const isLast = i === orderedLessons.length - 1;
