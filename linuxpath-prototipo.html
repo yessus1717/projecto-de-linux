@@ -1103,6 +1103,22 @@
   .type-command-continue.show { display: block; }
 
   /* ---- MULTI-STEP TERMINAL (Desafío final) ---- */
+  /* La terminal del desafío final crece para ocupar todo el espacio
+     vertical que le sobra a .lesson-body (que ya es flex-column y
+     tiene altura acotada al viewport real). Antes tenía un tope fijo
+     (max-height: min(60vh, 520px)) calculado sobre el 100% del
+     viewport, sin contar el espacio que ya ocupan el kicker, el
+     prompt, el contexto y el progreso por encima: con zoom al 100%
+     (menos alto de viewport disponible en px que al 90%) ese tope
+     podía superar el espacio real que quedaba dentro de .lesson-body,
+     y la parte de abajo de la terminal (input, mensaje de éxito)
+     quedaba recortada contra el overflow del contenedor exterior en
+     vez de mostrarse. Con flex:1 + min-height:0 la caja se ajusta
+     siempre al alto real disponible, sea cual sea el zoom o el tamaño
+     de pantalla, y solo su propio contenido interno hace scroll si no
+     alcanza. */
+  #ms-term-box { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  #ms-term-body { flex: 1; min-height: 0; max-height: none; }
   .multistep-progress { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
   .multistep-progress strong { color: var(--green); }
   .mini-term-history-line { display: flex; gap: 6px; align-items: baseline; color: var(--text-faint); }
@@ -5070,6 +5086,796 @@
     }
   ];
 
+  const queEsProcesoLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: '¿Qué es un proceso?',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'firefox', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID 4821 en ejecución', you: false }
+      ],
+      body: 'Cada vez que ejecutas un programa —abrir un navegador, correr un script, o incluso escribir un comando en la terminal— el sistema crea un "proceso": una instancia de ese programa corriendo en memoria, con sus propios recursos asignados (memoria, tiempo de CPU, archivos abiertos). Un mismo programa puede tener varios procesos a la vez; por ejemplo, cada pestaña de un navegador suele correr como un proceso distinto.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'El PID: la identificación de cada proceso',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ps', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID 1 init · PID 892 bash · PID 4821 firefox', you: false }
+      ],
+      body: 'Para que el sistema pueda distinguir un proceso de otro, cada uno recibe un número único mientras existe: el PID (Process ID). Ningún otro proceso activo comparte ese mismo número al mismo tiempo. En la próxima lección usarás comandos como ps y top para ver esos PIDs — primero vamos a ver de dónde sale el tuyo propio.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Tu propio PID',
+      prompt: 'Escribe echo $$ y presiona Enter',
+      context: '"$$" es una variable especial de la terminal que siempre contiene el PID del proceso de la propia terminal (el shell) en el que estás escribiendo.',
+      hint: 'Es el comando que repite texto en pantalla, seguido de dos signos de dólar pegados.',
+      command: 'echo $$',
+      tabCandidates: ['echo', '$$'],
+      output: '2417',
+      successMsg: 'Ese número (2417) es el PID del shell donde estás escribiendo ahora mismo: es literalmente un proceso, igual que cualquier programa.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Procesos padre e hijo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'bash (PID 2417)', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '└─ firefox (PID 4821)', you: false }
+      ],
+      body: 'Ningún proceso aparece de la nada: siempre lo crea otro proceso ya en ejecución. Al que crea se le llama "proceso padre", y al recién creado, "proceso hijo". Por ejemplo, cuando escribes firefox en tu terminal, es la propia terminal (bash) la que se convierte en el padre del nuevo proceso de Firefox.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'PPID: el PID de tu padre',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'echo $PPID', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '1204', you: false }
+      ],
+      body: 'Así como $$ te da tu propio PID, existe otra variable, $PPID (Parent PID), que te da el PID del proceso que te creó a ti: tu padre. Cada proceso hijo "recuerda" quién es su padre mientras ambos siguen vivos.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'El PID de tu padre',
+      prompt: 'Escribe echo $PPID y presiona Enter',
+      context: '$PPID contiene el PID del proceso que creó a tu shell actual: normalmente la terminal o la sesión que la abrió.',
+      hint: 'Es el mismo comando que usaste antes, con $PPID en vez de $$.',
+      command: 'echo $ppid',
+      tabCandidates: ['echo', '$ppid'],
+      output: '1204',
+      successMsg: 'Ese 1204 es el PID del proceso que abrió esta terminal: su "padre".'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'El árbol de procesos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID 1 (init / systemd)', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '└─ ... └─ bash └─ firefox', you: false }
+      ],
+      body: 'Si sigues la cadena de padres hacia arriba, proceso tras proceso, siempre terminas llegando al mismo lugar: un único proceso raíz con PID 1 (normalmente llamado init o systemd), que el propio kernel arranca al encender el sistema. Todos los demás procesos descienden de él, formando una estructura de árbol con PID 1 en la raíz.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Qué identifica de forma única a un proceso mientras está en ejecución?',
+      context: 'Piensa en el número que el sistema le asigna a cada proceso al crearlo.',
+      options: ['Su nombre de programa', 'Su PID', 'Su usuario dueño'],
+      correctIdx: 1,
+      explain: 'El PID (Process ID) es el número único que identifica a un proceso mientras existe; el nombre de programa o el usuario dueño pueden repetirse en varios procesos distintos a la vez.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Abres el navegador escribiendo firefox en tu terminal. ¿Cómo se llama la relación entre la terminal y el proceso del navegador?',
+      context: 'Piensa en quién crea a quién.',
+      options: ['La terminal es el proceso hijo del navegador', 'El navegador es el proceso padre de la terminal', 'La terminal es el proceso padre del navegador'],
+      correctIdx: 2,
+      explain: 'El proceso que crea a otro es su "padre"; como la terminal fue la que lanzó el navegador, la terminal es el padre y el navegador el hijo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un detalle importante',
+      prompt: 'Programa y proceso no son lo mismo',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>', text: 'firefox (el archivo, guardado en disco)', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID 4821, PID 4830, PID 4841... (tres pestañas abiertas)', you: false }
+      ],
+      body: 'Un "programa" es el archivo guardado en disco: código quieto, que no hace nada por sí solo hasta que lo ejecutas. Un "proceso" es lo que existe mientras ese programa corre en memoria, con su propio PID. Por eso puedes tener un solo programa Firefox instalado, y sin embargo varios procesos de Firefox corriendo a la vez —uno por cada pestaña o ventana que abras.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Tienes instalado un solo programa de edición de fotos, pero lo abres tres veces para trabajar en tres imágenes distintas. ¿Qué es correcto?',
+      context: 'Piensa en la diferencia entre el archivo instalado y lo que ocurre cada vez que lo ejecutas.',
+      options: ['Hay un solo proceso, porque es el mismo programa', 'Hay tres procesos distintos, cada uno con su propio PID', 'Un programa nunca puede tener más de un proceso a la vez'],
+      correctIdx: 1,
+      explain: 'Cada vez que ejecutas el programa se crea un proceso nuevo, con su propio PID y sus propios recursos. El programa (el archivo) es uno solo; los procesos que genera pueden ser varios al mismo tiempo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Un padre puede tener varios hijos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'bash (PID 2417)', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '├─ firefox (4821)  └─ nano (4902)', you: false }
+      ],
+      body: 'Nada impide que un mismo proceso padre cree varios procesos hijos, uno tras otro: si desde tu terminal abres firefox y luego, sin cerrarla, abres nano, ambos son hijos de esa misma terminal. En cambio, cada proceso hijo tiene siempre un único padre a la vez —nunca dos padres compartiendo un mismo hijo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Un proceso no siempre está "corriendo"',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'R: usando la CPU ahora mismo', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'S: dormido, esperando algo · T: pausado', you: false }
+      ],
+      body: 'Un proceso no pasa todo el tiempo usando la CPU. En un momento dado puede estar "corriendo" (R, running: activo en este instante), "dormido" (S, sleeping: esperando algo, como que termines de escribir o que llegue una respuesta de red) o "detenido" (T, stopped: pausado, sin avanzar hasta que algo lo reactive). El sistema va turnando la CPU entre los procesos que sí están listos para correr.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Un editor de texto está abierto, pero lleva varios minutos sin que hagas nada: no está usando la CPU, solo espera a que escribas algo. ¿En qué estado está probablemente?',
+      context: 'Piensa en cuál de los tres estados describe \"esperando a que ocurra algo\", sin estar detenido a propósito ni usando la CPU en este instante.',
+      options: ['Corriendo (R)', 'Dormido (S)', 'Detenido (T)'],
+      correctIdx: 1,
+      explain: 'Un proceso que espera una entrada (como que escribas algo) sin consumir CPU mientras tanto está en estado dormido (S, sleeping) — muy distinto de estar detenido (T), que normalmente ocurre porque alguien lo pausó explícitamente.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un caso especial',
+      prompt: 'Procesos zombis y huérfanos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'hijo termina, pero el padre no revisó el resultado todavía', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'proceso "zombi": ya terminó, pero sigue en la lista', you: false }
+      ],
+      body: 'Cuando un proceso hijo termina, deja un pequeño registro con su resultado final, a la espera de que su padre lo revise. Mientras eso no pase, ese hijo queda como proceso "zombi": ya no hace nada, pero todavía aparece en la lista de procesos. Y si en cambio es el padre el que muere antes que el hijo, ese hijo se vuelve "huérfano" — y el sistema se lo asigna automáticamente a PID 1, para que alguien siga siendo su responsable.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres ver el PID del proceso que creó tu shell actual, es decir, su proceso padre. Ordena las piezas.',
+      context: 'Es una variable especial de la terminal, distinta de la que muestra tu propio PID.',
+      chips: ['echo', '$$', '$PPID', 'ps', 'whoami'],
+      correctOrder: ['echo', '$PPID'],
+      explain: 'echo $PPID muestra el PID del proceso padre de tu shell actual. $$ es parecido, pero muestra tu propio PID, no el de tu padre.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'Procesos, PID y árbol: lo esencial',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID: identifica a cada proceso', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'padre → hijo, hasta llegar a PID 1', you: false }
+      ],
+      body: 'Repasemos: un proceso es una instancia de un programa en ejecución (no confundir con el programa, que es solo el archivo en disco), identificada con un PID único. Un mismo padre puede tener varios hijos, y todo proceso (salvo el primero) desciende de otro hasta llegar a PID 1, la raíz del árbol. Además, un proceso puede estar corriendo, dormido o detenido, y si un hijo termina o su padre muere antes de tiempo, puede quedar como zombi o huérfano. Con esta base ya puedes pasar a ver, en la siguiente lección, cómo listar todos estos procesos con ps y top.'
+    }
+  ];
+
+  const verProcesosLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: 'Ver los procesos con ps',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ps', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID TTY TIME CMD', you: false }
+      ],
+      body: 'Ya sabes qué es un proceso y qué es un PID. Ahora toca verlos: el comando "ps" (process status) te muestra una foto instantánea de los procesos que existen en ese momento. Sin nada más, "ps" solo lista los procesos de tu terminal actual — es el punto de partida antes de mirar el sistema completo.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Tu primera foto de procesos',
+      prompt: 'Escribe ps y presiona Enter',
+      context: '"ps" sin opciones muestra únicamente los procesos que pertenecen a tu terminal actual.',
+      hint: 'Son solo dos letras: la abreviatura de "process status".',
+      command: 'ps',
+      tabCandidates: ['ps'],
+      output: '  PID TTY          TIME CMD\n 2417 pts/0    00:00:00 bash\n 5093 pts/0    00:00:00 ps',
+      successMsg: 'Ahí están: tu shell (bash) y el propio "ps" ejecutándose, cada uno con su PID.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Qué significa cada columna',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID · TTY · TIME · CMD', you: false }
+      ],
+      body: 'PID es el número del proceso. TTY es la terminal a la que está asociado. TIME es el tiempo de CPU que ha consumido (no el tiempo que lleva abierto). CMD es el nombre del comando que lo originó. Con solo "ps" ves muy poco: para ver todos los procesos del sistema, de todos los usuarios, necesitas opciones adicionales.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'ps aux: todos los procesos, de todos los usuarios',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ps aux', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'USER PID %CPU %MEM ... COMMAND', you: false }
+      ],
+      body: '"ps aux" combina tres opciones: "a" (procesos de todos los usuarios, no solo el tuyo), "u" (formato orientado al usuario, con más columnas) y "x" (incluye también procesos sin terminal asociada, como los servicios de fondo). Es probablemente la forma más usada de listar procesos.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Todos los procesos del sistema',
+      prompt: 'Escribe ps aux y presiona Enter',
+      context: '"aux" combina tres opciones sin guion: todos los usuarios, formato detallado, y procesos sin terminal.',
+      hint: 'Es "ps" seguido de las tres letras a, u y x pegadas.',
+      command: 'ps aux',
+      tabCandidates: ['ps', 'aux'],
+      output: 'USER   PID %CPU %MEM    VSZ   RSS TTY  STAT START   TIME COMMAND\nroot     1  0.0  0.1  16932  1112 ?    Ss   09:03   0:01 /sbin/init\nuser  2417  0.0  0.2  21456  4820 pts/0 Ss  09:10   0:00 bash\nuser  4821  1.2  3.4 412300 68900 ?    Sl   09:15   0:42 firefox',
+      successMsg: '%CPU y %MEM te dicen cuánto está consumiendo cada proceso — clave para detectar cuál se está comiendo tus recursos.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'En la salida de "ps aux", ¿qué columna te dice cuánta memoria RAM está usando un proceso en este momento?',
+      context: 'Piensa en las columnas orientadas a recursos que añade la opción "u".',
+      options: ['TTY', '%MEM', 'STAT'],
+      correctIdx: 1,
+      explain: '%MEM muestra el porcentaje de memoria RAM que usa el proceso; TTY indica la terminal asociada y STAT su estado (R, S, T, etc.).'
+    },
+    {
+      type: 'concept',
+      kicker: 'Otro ángulo',
+      prompt: 'top: procesos en tiempo real',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'ps: una sola foto', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'top: video en vivo', you: false }
+      ],
+      body: '"ps" es una foto fija: se toma una vez y no cambia en pantalla. "top" en cambio abre una vista que se actualiza sola cada pocos segundos, mostrando los procesos que más CPU están usando en ese instante, arriba de todo — de ahí su nombre.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Monitoreo en vivo',
+      prompt: 'Escribe top y presiona Enter',
+      context: '"top" abre una pantalla interactiva que se refresca sola; no hace falta volver a escribir el comando para ver datos nuevos.',
+      hint: 'Tres letras, el mismo nombre que usarías para decir "la parte de arriba".',
+      command: 'top',
+      tabCandidates: ['top'],
+      output: 'top - 15:42:07 up 2:31,  1 user,  load average: 0.34, 0.28, 0.19\nTasks: 118 total,   1 running, 117 sleeping\n  PID USER   %CPU %MEM COMMAND\n 4821 user   12.3  3.4 firefox\n 2417 user    0.1  0.2 bash',
+      successMsg: 'Mientras "top" siga abierto, esta lista se sigue actualizando sola. Para salir, presiona la tecla q.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Salir de top y algunas teclas útiles',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'q → salir de top', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'Mayús+M → ordenar por memoria', you: false }
+      ],
+      body: '"top" no es solo para mirar: es interactivo. La tecla q lo cierra y te devuelve la terminal normal. Mientras está abierto, Mayús+P ordena los procesos por uso de CPU (el orden por defecto) y Mayús+M los ordena por uso de memoria — útil cuando buscas qué proceso está agotando la RAM en vez del procesador.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Quieres saber qué proceso está consumiendo más CPU justo ahora, y ver cómo cambia segundo a segundo. ¿Qué comando conviene más?',
+      context: 'Piensa en cuál de los dos actualiza la pantalla solo, sin que vuelvas a escribir nada.',
+      options: ['ps aux', 'top', 'ps'],
+      correctIdx: 1,
+      explain: '"top" se actualiza automáticamente, ideal para monitorear en tiempo real. "ps" y "ps aux" son solo una foto del instante en que los ejecutas.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres ver los procesos de todos los usuarios del sistema, con detalles de CPU y memoria, en una sola foto. Ordena las piezas.',
+      context: 'Es "ps" seguido de tres letras pegadas, sin espacios ni guion.',
+      chips: ['ps', 'aux', 'top', '-l', 'whoami'],
+      correctOrder: ['ps', 'aux'],
+      explain: '"ps aux" muestra todos los procesos del sistema con columnas de %CPU y %MEM incluidas; "top" en cambio abre una vista en vivo, no una sola foto.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Otra sintaxis',
+      prompt: 'ps -ef: la variante que muestra el padre de cada proceso',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ps -ef', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'UID PID PPID ... CMD', you: false }
+      ],
+      body: 'Existe otra forma muy usada, con guion: "ps -ef". Hace básicamente lo mismo que "ps aux" (todos los procesos del sistema), pero con un formato distinto y una columna extra clave: PPID, el PID del proceso padre. Es la opción que conviene cuando quieres ver de un vistazo quién creó a quién, sin armar el árbol completo.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Viendo los padres de cada proceso',
+      prompt: 'Escribe ps -ef y presiona Enter',
+      context: 'La columna PPID te muestra directamente qué proceso es el padre de cada uno, sin tener que calcularlo tú.',
+      hint: 'Es "ps" seguido de guion, e, f.',
+      command: 'ps -ef',
+      tabCandidates: ['ps', '-ef'],
+      output: 'UID   PID  PPID  C STIME TTY      TIME CMD\nroot     1     0  0 09:03 ?    00:00:01 /sbin/init\nuser  2417     1  0 09:10 pts/0 00:00:00 bash\nuser  4821  2417  3 09:15 pts/0 00:00:42 firefox',
+      successMsg: 'Fíjate: el PPID de "firefox" es 2417, el mismo PID que "bash" — confirma que la terminal es su padre.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Filtrar la lista con grep',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'ps aux | grep firefox', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'solo la(s) línea(s) que contienen "firefox"', you: false }
+      ],
+      body: '"ps aux" en un sistema real puede mostrar cientos de líneas — buscar una a simple vista es incómodo. Ahí entra el pipe "|", que conecta la salida de un comando con la entrada de otro: "ps aux | grep firefox" primero lista todos los procesos y luego le pasa esa lista a "grep", que se queda solo con las líneas que contienen "firefox".'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Buscar un proceso por nombre',
+      prompt: 'Escribe ps aux | grep firefox y presiona Enter',
+      context: 'El símbolo | (pipe) envía la salida de "ps aux" como entrada de "grep", que filtra por la palabra que le indiques.',
+      hint: 'Es "ps aux", luego el símbolo de barra vertical, luego "grep" y el nombre a buscar.',
+      command: 'ps aux | grep firefox',
+      tabCandidates: ['ps', 'aux', '|', 'grep', 'firefox'],
+      output: 'user  4821  1.2  3.4 412300 68900 ?    Sl   09:15   0:42 firefox\nuser  5210  0.0  0.0   7488   840 pts/0 S+   09:22   0:00 grep --color=auto firefox',
+      successMsg: 'Nota que hasta el propio comando "grep firefox" aparece en la lista: también es un proceso, aunque termina apenas se ejecuta.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'En la salida de "ps aux", ves un proceso con estado "Z" en la columna STAT. ¿Qué tipo de proceso es, según lo que ya viste sobre ciclo de vida?',
+      context: 'Piensa en el proceso que ya terminó pero cuyo padre todavía no revisó su resultado final.',
+      options: ['Un proceso zombi', 'Un proceso huérfano', 'Un proceso recién creado'],
+      correctIdx: 0,
+      explain: 'El estado "Z" (zombie) identifica a un proceso que ya terminó pero sigue apareciendo en la lista porque su padre aún no ha leído su resultado final.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Otro ángulo',
+      prompt: 'pstree: el árbol de procesos, dibujado',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'init─┬─bash───firefox', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '        └─sshd', you: false }
+      ],
+      body: 'Reconstruir el árbol de padres e hijos a mano leyendo columnas PPID es tedioso. "pstree" hace ese trabajo por ti: dibuja directamente la jerarquía completa, desde PID 1 hasta el último proceso hijo, usando líneas para mostrar quién viene de quién.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'El árbol completo',
+      prompt: 'Escribe pstree y presiona Enter',
+      context: '"pstree" muestra en un solo vistazo la relación padre-hijo de todos los procesos, sin que tengas que cruzar columnas de PID y PPID.',
+      hint: 'Es la unión de las palabras "ps" y "tree" (árbol, en inglés).',
+      command: 'pstree',
+      tabCandidates: ['pstree'],
+      output: 'init─┬─bash───firefox\n     ├─sshd\n     └─cron',
+      successMsg: 'Con un vistazo ves que init es el padre de todo, y que firefox depende de bash — la misma información que sacaste antes con $PPID, pero de un solo comando.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un dato extra',
+      prompt: 'htop: una alternativa más amigable a top',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'htop', you: false }
+      ],
+      body: 'No viene instalado por defecto en todas las distribuciones, pero vale la pena conocerlo: "htop" hace lo mismo que "top" (monitoreo en vivo), con colores, barras de uso de CPU y memoria, y la posibilidad de desplazarte con el mouse o las flechas. Si está disponible en tu sistema, suele ser más cómodo de leer que "top".'
+    },
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'Ver procesos: lo esencial',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'ps / ps aux / ps -ef: una foto fija', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'top / htop: una vista en vivo, se actualiza sola', you: false }
+      ],
+      body: 'Repasemos: "ps" sin opciones solo muestra los procesos de tu terminal; "ps aux" y "ps -ef" te dan una foto completa del sistema, con %CPU, %MEM o PPID según el formato. Puedes filtrar esa foto con "| grep" para encontrar un proceso por nombre, o pedirle a "pstree" que te dibuje la jerarquía completa de una vez. "top" (o "htop", si está disponible) en cambio es una vista interactiva que se actualiza sola y por defecto ordena por uso de CPU — perfecta para detectar en vivo qué proceso está consumiendo más recursos. Con esto ya sabes identificar, filtrar y observar procesos; en la siguiente lección aprenderás a manejarlos en segundo plano.'
+    }
+  ];
+
+  const segundoPlanoLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: 'Un comando puede bloquear tu terminal',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'sleep 100', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '(la terminal queda ocupada 100 segundos...)', you: false }
+      ],
+      body: 'Hasta ahora, cada comando que escribiste corrió en "primer plano": la terminal queda ocupada esperando a que termine, sin dejarte escribir nada más. Eso funciona bien para comandos rápidos, pero es un problema si algo tarda minutos u horas. La solución es correrlo en "segundo plano", agregando un & al final del comando.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Tu primer proceso en segundo plano',
+      prompt: 'Escribe sleep 100 & y presiona Enter',
+      context: '"sleep 100" simplemente espera 100 segundos sin hacer nada más — perfecto para practicar sin necesitar un programa real. El & al final lo manda a segundo plano.',
+      hint: 'Es "sleep", un espacio, el número 100, y el símbolo & pegado al final.',
+      command: 'sleep 100 &',
+      tabCandidates: ['sleep', '100', '&'],
+      output: '[1] 5320',
+      successMsg: 'La terminal te devolvió el control de inmediato: "[1]" es el número de trabajo, y 5320 es el PID de ese "sleep" corriendo de fondo.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'Qué es un "job" (trabajo)',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '[1] sleep 100 &', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '[2] ping google.com &', you: false }
+      ],
+      body: 'Además del PID, tu shell le asigna a cada comando en segundo plano un número de "job" (trabajo), empezando en 1 y subiendo por cada nuevo comando que mandes con &. Es un número propio de esa terminal, más corto y fácil de recordar que el PID, pensado para referirte a ese trabajo más adelante.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Ver tus trabajos activos',
+      prompt: 'Escribe jobs y presiona Enter',
+      context: '"jobs" lista los trabajos en segundo plano (o pausados) de tu sesión actual, con su número y estado.',
+      hint: 'Es el plural de "job", en inglés.',
+      command: 'jobs',
+      tabCandidates: ['jobs'],
+      output: '[1]+  Running                 sleep 100 &',
+      successMsg: 'Ahí está tu trabajo [1], con estado "Running": sigue corriendo de fondo, sin ocupar tu terminal.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Pausar un proceso en primer plano: Ctrl+Z',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: '[Ctrl+Z]', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '[1]+  Stopped                 sleep 100', you: false }
+      ],
+      body: 'Si olvidaste el & y un comando ya está ocupando tu terminal en primer plano, no hace falta cancelarlo con Ctrl+C: Ctrl+Z lo pausa sin matarlo, dejándolo como trabajo detenido ("Stopped") y devolviéndote la terminal al instante.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Presionas Ctrl+Z sobre un proceso que estaba corriendo en primer plano. Según los estados que ya conoces (R, S, T), ¿en cuál queda ahora?',
+      context: 'Piensa en el estado que corresponde a "pausado, sin avanzar hasta que algo lo reactive".',
+      options: ['R (running)', 'S (sleeping)', 'T (stopped)'],
+      correctIdx: 2,
+      explain: 'Ctrl+Z deja al proceso en estado T (stopped): pausado por completo, ni corriendo ni esperando una entrada — solo se reactiva si le mandas bg o fg.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'bg: reanudar un trabajo, pero en segundo plano',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'bg %1', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '[1]+ sleep 100 &', you: false }
+      ],
+      body: 'Un trabajo "Stopped" (por Ctrl+Z) no avanza hasta que le digas qué hacer. "bg" (background) lo reanuda, pero mandalo de vuelta a segundo plano, tal como si le hubieras puesto & desde el principio: la terminal queda libre y el trabajo sigue su curso.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Reanudar de fondo',
+      prompt: 'Escribe bg %1 y presiona Enter',
+      context: '"%1" se refiere al trabajo número 1, el mismo número que viste con "jobs". Sin el % también funciona en muchos shells, pero %1 es más explícito.',
+      hint: 'Es "bg", un espacio, y el símbolo % seguido del número de trabajo.',
+      command: 'bg %1',
+      tabCandidates: ['bg', '%1'],
+      output: '[1]+ sleep 100 &',
+      successMsg: 'El trabajo pasó de "Stopped" a correr de nuevo, esta vez en segundo plano — tu terminal sigue libre.'
+    },
+    {
+      type: 'concept',
+      kicker: 'El otro lado de la moneda',
+      prompt: 'fg: traer un trabajo de vuelta al primer plano',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'fg %1', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'sleep 100 (terminal ocupada de nuevo)', you: false }
+      ],
+      body: '"fg" (foreground) hace justo lo contrario a "bg": toma un trabajo —corriendo de fondo o detenido— y lo trae de vuelta al primer plano, ocupando tu terminal otra vez hasta que termine (o lo pauses de nuevo con Ctrl+Z).'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Volver al primer plano',
+      prompt: 'Escribe fg %1 y presiona Enter',
+      context: 'Al traerlo a primer plano, la terminal vuelve a quedar ocupada por ese comando, igual que si nunca lo hubieras mandado a segundo plano.',
+      hint: 'Es "fg", un espacio, y el símbolo % seguido del número de trabajo.',
+      command: 'fg %1',
+      tabCandidates: ['fg', '%1'],
+      output: 'sleep 100',
+      successMsg: 'Ahora la terminal está ocupada de nuevo con "sleep 100", igual que si lo hubieras escrito sin & desde el inicio.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Tienes un trabajo "Stopped" y quieres que siga corriendo, pero sin que ocupe tu terminal. ¿Qué comando usas?',
+      context: 'Piensa en cuál de los dos lo reanuda liberando la terminal, y cuál la vuelve a ocupar.',
+      options: ['fg %1', 'bg %1', 'jobs %1'],
+      correctIdx: 1,
+      explain: '"bg %1" reanuda el trabajo detenido en segundo plano, dejando la terminal libre. "fg %1" también lo reanuda, pero ocupando la terminal.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres traer de vuelta al primer plano el trabajo número 1. Ordena las piezas.',
+      context: 'Es lo opuesto a mandar un trabajo a segundo plano.',
+      chips: ['fg', '%1', 'bg', 'jobs', '&'],
+      correctOrder: ['fg', '%1'],
+      explain: '"fg %1" trae el trabajo número 1 al primer plano; "bg %1" haría lo contrario, mandarlo a segundo plano.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'Segundo plano: lo esencial',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '& al final: manda un comando de fondo', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'jobs / Ctrl+Z / bg / fg: manejarlo después', you: false }
+      ],
+      body: 'Repasemos: agregar & al final de un comando lo manda a correr en segundo plano, liberando tu terminal de inmediato, y el shell le asigna un número de trabajo que puedes consultar con "jobs". Si un comando ya quedó ocupando la terminal en primer plano, Ctrl+Z lo pausa (estado Stopped) sin matarlo. Desde ahí, "bg %n" lo reanuda de fondo y "fg %n" lo trae de vuelta al primer plano. Con estas cuatro piezas puedes correr varias tareas a la vez sin depender de múltiples terminales. En la siguiente lección verás cómo terminar procesos por completo con kill.'
+    }
+  ];
+
+  const terminarProcesosLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: 'Terminar un proceso: el comando kill',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'kill 5320', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '(el proceso con PID 5320 termina)', you: false }
+      ],
+      body: 'A pesar del nombre, "kill" no "mata" nada por la fuerza por defecto: envía una señal a un proceso, identificado por su PID. Esa señal es un mensaje del sistema que le pide (o le exige) al proceso que haga algo — normalmente, terminar. Lo que pasa después depende de qué señal mandes.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Pedir que termine',
+      prompt: 'Escribe kill 5320 y presiona Enter',
+      context: 'Sin especificar una señal, "kill" envía SIGTERM (señal 15): una petición educada para que el proceso termine por su cuenta.',
+      hint: 'Es "kill", un espacio, y el PID del proceso.',
+      command: 'kill 5320',
+      tabCandidates: ['kill', '5320'],
+      output: '[1]+  Terminated              sleep 100',
+      successMsg: 'El proceso recibió SIGTERM y terminó por su cuenta — alcanzó a cerrar archivos abiertos y liberar recursos antes de irse.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Teoría',
+      prompt: 'SIGTERM: una petición, no una orden',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'SIGTERM (15): "por favor, termina"', you: false }
+      ],
+      body: 'SIGTERM le avisa al proceso que debe terminar, pero le deja margen para reaccionar: puede guardar cambios pendientes, cerrar conexiones de red o limpiar archivos temporales antes de salir. Un programa bien hecho responde a SIGTERM cerrándose de forma ordenada. El problema es que un proceso trabado o mal programado puede ignorarla.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'SIGKILL: la señal que no se puede ignorar',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'kill -9 5320', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'SIGKILL (9): termina de inmediato, sin aviso', you: false }
+      ],
+      body: 'Cuando un proceso ignora SIGTERM (o está completamente trabado), existe SIGKILL, la señal número 9: el kernel termina el proceso de inmediato, sin darle oportunidad de reaccionar ni de limpiar nada. Se escribe agregando -9 (o -SIGKILL) después de "kill". Es el último recurso, no la primera opción.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Forzar la terminación',
+      prompt: 'Escribe kill -9 5320 y presiona Enter',
+      context: 'El -9 indica la señal SIGKILL. A diferencia de SIGTERM, un proceso no puede capturarla ni ignorarla: el kernel lo termina de una vez.',
+      hint: 'Es "kill", un espacio, guion, el número 9, otro espacio, y el PID.',
+      command: 'kill -9 5320',
+      tabCandidates: ['kill', '-9', '5320'],
+      output: '[1]+  Killed                  sleep 100',
+      successMsg: '"Killed" en vez de "Terminated": el proceso no tuvo chance de reaccionar, simplemente dejó de existir.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Un proceso lleva varios minutos sin responder a "kill" (SIGTERM) y sigue en la lista de "ps". ¿Qué conviene probar después?',
+      context: 'Piensa en la señal que el proceso no puede ignorar ni capturar.',
+      options: ['Volver a mandar SIGTERM otra vez', 'kill -9 (SIGKILL)', 'Esperar a que el sistema lo cierre solo'],
+      correctIdx: 1,
+      explain: 'Si un proceso ignora SIGTERM, SIGKILL (-9) es la opción que garantiza que el kernel lo termine, ya que ningún proceso puede bloquear o ignorar esa señal.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Otro ángulo',
+      prompt: 'Terminar un job por su número, no por su PID',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'kill %1', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '[1]+  Terminated              sleep 100 &', you: false }
+      ],
+      body: 'Si el proceso lo mandaste tú mismo a segundo plano con &, no siempre hace falta buscar su PID: puedes usar el número de job que viste con "jobs", igual que hiciste con bg y fg. "kill %1" termina el trabajo 1, sin que tengas que consultar su PID primero.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'pkill: terminar por nombre, no por PID',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>', text: 'pkill firefox', you: true },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: '(todos los procesos llamados "firefox" terminan)', you: false }
+      ],
+      body: 'Buscar el PID a mano con "ps aux | grep" antes de cada "kill" es tedioso. "pkill" salta ese paso: le das el nombre del programa y termina, con SIGTERM, todos los procesos que coincidan con ese nombre — aunque haya varios (como varias pestañas de un mismo navegador).'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Terminar por nombre',
+      prompt: 'Escribe pkill firefox y presiona Enter',
+      context: '"pkill" busca procesos cuyo nombre coincida con lo que le pases y les manda la señal (SIGTERM por defecto) a todos a la vez.',
+      hint: 'Es "pkill", un espacio, y el nombre del programa.',
+      command: 'pkill firefox',
+      tabCandidates: ['pkill', 'firefox'],
+      output: '',
+      successMsg: '"pkill" no imprime nada si tiene éxito: el silencio significa que encontró el proceso (o procesos) y les mandó la señal.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Tienes tres pestañas de Firefox abiertas, cada una como un proceso distinto, y quieres cerrarlas todas de un solo comando sin buscar cada PID. ¿Qué usas?',
+      context: 'Piensa en cuál de los comandos que viste identifica procesos por nombre en vez de por PID.',
+      options: ['kill 4821', 'pkill firefox', 'jobs firefox'],
+      correctIdx: 1,
+      explain: '"pkill firefox" termina de una vez todos los procesos cuyo nombre coincide con "firefox", sin que tengas que buscar el PID de cada pestaña.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Un proceso con PID 5320 no responde a SIGTERM. Quieres forzar su terminación de inmediato. Ordena las piezas.',
+      context: 'Es la señal que ningún proceso puede ignorar ni capturar.',
+      chips: ['kill', '-9', '5320', 'pkill', '-1'],
+      correctOrder: ['kill', '-9', '5320'],
+      explain: '"kill -9 5320" envía SIGKILL al proceso 5320, forzándolo a terminar de inmediato sin darle oportunidad de reaccionar.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Resumen',
+      prompt: 'Terminar procesos: lo esencial',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'kill PID: envía una señal (SIGTERM por defecto)', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'kill -9 PID / pkill nombre: forzar o terminar por nombre', you: false }
+      ],
+      body: 'Repasemos: "kill" no mata a la fuerza por defecto, envía SIGTERM, una petición de terminar de forma ordenada que el proceso puede capturar y manejar. Si eso no funciona, SIGKILL ("kill -9") fuerza la terminación de inmediato, sin que el proceso pueda evitarlo. También puedes terminar un trabajo de segundo plano con "kill %n", o saltarte la búsqueda de PID por completo con "pkill nombre", que termina todos los procesos que coincidan con ese nombre. Con esto cierras el ciclo completo: ya sabes qué es un proceso, cómo verlo, cómo manejarlo en segundo plano y cómo terminarlo cuando haga falta.'
+    }
+  ];
+
+  const repasoProcesosLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Repaso final',
+      prompt: 'Todo lo que aprendiste en Procesos',
+      illustration: [
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'PID · PPID · árbol de procesos', you: false },
+        { who: '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>', text: 'ps · top · & · jobs · kill', you: false }
+      ],
+      body: 'Antes de pasar al siguiente nivel, vamos a repasar mezclado todo lo que ya sabes: qué es un proceso y su PID, cómo verlos con ps y top, cómo manejarlos en segundo plano con &, jobs, bg y fg, y cómo terminarlos con kill y pkill. Si te trabas en algo, vuelve a la lección correspondiente.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Abres tres pestañas del mismo navegador. ¿Qué es correcto?',
+      context: 'Piensa en la diferencia entre el programa instalado y lo que ocurre cada vez que lo ejecutas.',
+      options: ['Hay un solo proceso, porque es el mismo programa', 'Hay tres procesos distintos, cada uno con su propio PID', 'El PID se comparte entre las tres pestañas'],
+      correctIdx: 1,
+      explain: 'Cada ejecución crea un proceso nuevo con su propio PID, aunque el programa (el archivo) sea el mismo.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe ps aux y presiona Enter',
+      context: 'ps aux muestra todos los procesos del sistema, con columnas de %CPU y %MEM incluidas.',
+      command: 'ps aux',
+      tabCandidates: ['ps', 'aux'],
+      output: 'USER   PID %CPU %MEM    VSZ   RSS TTY  STAT START   TIME COMMAND\nuser  2417  0.0  0.2  21456  4820 pts/0 Ss  09:10   0:00 bash\nuser  4821  1.2  3.4 412300 68900 ?    Sl   09:15   0:42 firefox',
+      successMsg: '%CPU y %MEM te dicen cuánto está consumiendo cada proceso del sistema, no solo los de tu terminal.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'En "ps -ef", ves que el proceso firefox (PID 4821) tiene PPID 2417, el mismo PID que bash. ¿Qué significa eso?',
+      context: 'PPID siempre apunta al proceso que creó a otro.',
+      options: ['bash es el proceso hijo de firefox', 'bash es el proceso padre de firefox', 'firefox y bash son el mismo proceso'],
+      correctIdx: 1,
+      explain: 'El PPID de un proceso es el PID de su padre. Si el PPID de firefox coincide con el PID de bash, bash es quien lo creó: su padre.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Un proceso lleva un rato sin usar la CPU, solo esperando a que llegue una respuesta de red. ¿En qué estado está, según la columna STAT?',
+      context: 'Piensa en cuál de los tres estados corresponde a "esperando algo", sin estar pausado a propósito.',
+      options: ['R (running)', 'S (sleeping)', 'T (stopped)'],
+      correctIdx: 1,
+      explain: 'S (sleeping) es el estado de un proceso que espera algo —como una respuesta de red— sin consumir CPU mientras tanto.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres ver los procesos del sistema junto con la columna PPID, para saber quién creó a quién. Ordena las piezas.',
+      context: 'Es la variante de ps que usa guion, distinta de "aux".',
+      chips: ['ps', '-ef', 'top', 'jobs', '-9'],
+      correctOrder: ['ps', '-ef'],
+      explain: '"ps -ef" incluye la columna PPID; "ps aux" en cambio no la muestra directamente.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe jobs y presiona Enter',
+      context: 'jobs lista los trabajos en segundo plano (o pausados) de tu sesión, con su número y estado.',
+      command: 'jobs',
+      tabCandidates: ['jobs'],
+      output: '[1]+  Running                 sleep 100 &',
+      successMsg: 'El número entre corchetes es el número de trabajo, distinto y más corto que el PID.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribes sleep 300 & en vez de sleep 300. ¿Qué cambia?',
+      context: 'Piensa en qué le pasa a tu terminal justo después de presionar Enter.',
+      options: ['La terminal queda ocupada 300 segundos igual que sin &', 'La terminal se libera de inmediato y el comando sigue corriendo de fondo', 'El comando se cancela apenas lo escribes'],
+      correctIdx: 1,
+      explain: 'El & manda el comando a segundo plano: la terminal queda libre de inmediato mientras el proceso sigue corriendo.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Presionas Ctrl+Z sobre un comando que estaba corriendo en primer plano. ¿En qué estado queda, y qué le pasa a tu terminal?',
+      context: 'Ctrl+Z no cancela el proceso, solo lo pausa.',
+      options: ['Queda "Running" y la terminal sigue ocupada', 'Queda "Stopped" y la terminal se libera', 'El proceso termina por completo'],
+      correctIdx: 1,
+      explain: 'Ctrl+Z pausa el proceso (estado Stopped, T) sin matarlo, y te devuelve el control de la terminal de inmediato.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Tienes el trabajo 1 en estado Stopped y quieres que siga corriendo, pero sin ocupar tu terminal. Ordena las piezas.',
+      context: 'Es lo contrario de traerlo de vuelta al primer plano.',
+      chips: ['bg', '%1', 'fg', 'kill', '&'],
+      correctOrder: ['bg', '%1'],
+      explain: '"bg %1" reanuda el trabajo 1 en segundo plano, dejando la terminal libre.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: '¿Cuál es la diferencia entre fg %1 y bg %1?',
+      context: 'Ambos reanudan un trabajo detenido; la diferencia está en qué pasa con tu terminal.',
+      options: ['fg lo reanuda de fondo, bg lo trae al primer plano', 'fg lo trae al primer plano (ocupa la terminal), bg lo reanuda de fondo (la libera)', 'No hay ninguna diferencia real'],
+      correctIdx: 1,
+      explain: '"fg" trae un trabajo al primer plano, ocupando la terminal; "bg" lo reanuda en segundo plano, dejándola libre.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe kill 4821 y presiona Enter',
+      context: 'Sin especificar señal, kill envía SIGTERM: una petición de terminar de forma ordenada.',
+      command: 'kill 4821',
+      tabCandidates: ['kill', '4821'],
+      output: '[2]+  Terminated              firefox',
+      successMsg: 'SIGTERM le da al proceso la chance de cerrar limpio antes de terminar.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Un proceso ignora SIGTERM y sigue apareciendo en ps. ¿Qué señal garantiza que el kernel lo termine, sin que el proceso pueda evitarlo?',
+      context: 'Piensa en la señal que ningún proceso puede capturar ni ignorar.',
+      options: ['SIGTERM otra vez', 'SIGKILL (-9)', 'SIGSTOP'],
+      correctIdx: 1,
+      explain: 'SIGKILL (señal 9) no puede ser ignorada ni capturada: el kernel termina el proceso de inmediato.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres forzar la terminación inmediata del proceso con PID 5320. Ordena las piezas.',
+      context: 'Es kill, seguido de la opción de la señal que no se puede ignorar.',
+      chips: ['kill', '-9', '5320', 'pkill', 'bg'],
+      correctOrder: ['kill', '-9', '5320'],
+      explain: '"kill -9 5320" envía SIGKILL al proceso 5320, forzándolo a terminar sin darle oportunidad de reaccionar.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Tienes varias pestañas de Firefox abiertas y quieres cerrarlas todas sin buscar cada PID. ¿Qué comando usas?',
+      context: 'Piensa en el comando que identifica procesos por nombre en vez de por PID.',
+      options: ['kill firefox', 'pkill firefox', 'jobs firefox'],
+      correctIdx: 1,
+      explain: '"pkill firefox" termina todos los procesos cuyo nombre coincide con "firefox", sin necesidad de buscar cada PID.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe pstree y presiona Enter',
+      context: 'pstree dibuja la jerarquía completa de padres e hijos, sin que tengas que cruzar columnas de PID y PPID.',
+      command: 'pstree',
+      tabCandidates: ['pstree'],
+      output: 'init─┬─bash───firefox\n     └─cron',
+      successMsg: 'Es la misma información de padres e hijos que verías cruzando PID y PPID a mano, pero ya dibujada.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ves un proceso con estado Z (zombi) en ps aux. ¿Qué significa exactamente?',
+      context: 'Piensa en qué falta que ocurra para que ese proceso desaparezca de la lista.',
+      options: ['Ya terminó, pero su padre aún no revisó su resultado final', 'Está a punto de crear un proceso hijo', 'Está consumiendo el 100% de la CPU'],
+      correctIdx: 0,
+      explain: 'Un proceso zombi ya terminó su ejecución, pero sigue en la lista porque su padre todavía no ha leído su código de salida.'
+    }
+  ];
+
   const unitData = {
     1: {
       title: 'Fundamentos', icon: 'linux', subtitle: 'Unidad 1 · Nivel 1',
@@ -5107,11 +5913,11 @@
     4: {
       title: 'Procesos', icon: 'settings', subtitle: 'Unidad 4 · Nivel 4',
       lessons: [
-        { title: '¿Qué es un proceso?', sub: 'PID, procesos padre e hijo', status: 'active', icon: 'settings' },
-        { title: 'Ver procesos', sub: 'ps y top', status: 'active', icon: 'chart' },
-        { title: 'Segundo plano', sub: '&, jobs, fg, bg', status: 'active', icon: 'loop' },
-        { title: 'Terminar procesos', sub: 'kill y las señales comunes', status: 'active', icon: 'stop' },
-        { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
+        { title: '¿Qué es un proceso?', sub: 'PID, procesos padre e hijo', status: 'active', icon: 'settings', exercises: queEsProcesoLessonSteps },
+        { title: 'Ver procesos', sub: 'ps y top', status: 'active', icon: 'chart', exercises: verProcesosLessonSteps },
+        { title: 'Segundo plano', sub: '&, jobs, fg, bg', status: 'active', icon: 'loop', exercises: segundoPlanoLessonSteps },
+        { title: 'Terminar procesos', sub: 'kill y las señales comunes', status: 'active', icon: 'stop', exercises: terminarProcesosLessonSteps },
+        { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoProcesosLessonSteps },
         { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
       ]
     },
