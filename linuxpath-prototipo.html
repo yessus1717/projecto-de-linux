@@ -10,7 +10,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script type="module">
   // Protege esta página: sin sesión activa, redirige a login.html
-  import { requireAuth, signOut } from './auth.js';
+  import { requireAuth, signOut, saveCloudProgress, loadCloudProgress } from './auth.js';
+  // Los exponemos en window porque el resto de la lógica de la app
+  // (progreso, mapa, ejercicios) vive en un <script> clásico más abajo,
+  // no en un módulo, y los módulos no comparten alcance con él.
+  window.__lp_saveCloudProgress = saveCloudProgress;
+  window.__lp_loadCloudProgress = loadCloudProgress;
+  // Señal para que el <script> clásico de abajo sepa que este módulo
+  // (que carga asíncronamente) ya dejó las funciones listas en window,
+  // en vez de asumir un orden de ejecución que los módulos ES no garantizan.
+  window.__lp_cloudReady = true;
+  if (window.__lp_onCloudReady) window.__lp_onCloudReady();
 
   requireAuth().then(function (session) {
     if (!session) return; // ya se está redirigiendo a login.html
@@ -1378,6 +1388,34 @@
     border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
   }
   .po-check-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ---- MATCH-PAIRS: relacionar tarjetas de dos columnas ----
+     A diferencia de 'choice' (una sola pregunta con una sola respuesta
+     correcta), aquí hay varios pares a la vez: el usuario toca una
+     tarjeta de la columna izquierda y luego su pareja en la derecha.
+     Un par correcto queda fijo (matched); uno incorrecto se marca en
+     rojo un instante y libera ambas tarjetas para reintentar. Pensado
+     para relacionar comandos/flags con su significado, sin que el orden
+     de aparición filtre la respuesta (las columnas se mezclan al azar). */
+  .match-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    margin-bottom: 6px;
+  }
+  .match-card {
+    background: var(--bg-card); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 13.5px; color: var(--text); text-align: left;
+    cursor: pointer; transition: all .12s ease; line-height: 1.35;
+  }
+  .match-card.left { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+  .match-card:hover:not(.matched):not(:disabled) { border-color: var(--text-faint); }
+  .match-card.selected { border-color: var(--blue); background: var(--blue-deep); }
+  .match-card.matched { border-color: var(--green); background: var(--green-deep); color: var(--green); cursor: default; opacity: 0.85; }
+  .match-card.wrong { border-color: var(--red); background: var(--red-deep); color: var(--red); }
+  .match-progress { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 14px; }
+  .match-progress strong { color: var(--green); }
   /* Override final: la cajita/panel detrás del ícono del nodo debe
      quedar transparente en los estados "activo" y "bloqueado" (sin
      importar el color de unidad), pero el nodo COMPLETADO queda fuera
@@ -1544,6 +1582,10 @@
     xp: 0,
     streak: 0,
     hearts: 5,
+    // Fecha (formato YYYY-MM-DD, hora local) del último día en que el
+    // usuario completó al menos una lección. Es la base del sistema de
+    // racha: se compara contra "hoy" en updateStreakOnActivity().
+    lastActivityDate: null,
     currentUnit: null,
     currentLessonIdx: 0,
     exerciseIdx: 0,
@@ -5992,6 +6034,846 @@
     }
   ];
 
+  // ---------- UNIDAD 5 (Redes) · Lección 1: Conceptos de red ----------
+  // Primera lección de la unidad de Redes: no asume nada previo, va de
+  // "qué es una IP" a "qué es un puerto" y "qué es DNS", con el mismo
+  // patrón concept -> práctica que usa introLessonSteps en Fundamentos.
+  // Los comandos de red reales (ping, curl, ssh) tienen sus propias
+  // lecciones después; aquí solo se usa hostname -I, que es seguro de
+  // simular porque no depende de ninguna red externa real.
+  const conceptosRedLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: '¿Qué es una dirección IP?',
+      illustration: [
+        { who: ICONS.linux, text: '¿Cómo te encuentro en la red?', you: true },
+        { who: ICONS.globe, text: '192.168.1.24', you: false }
+      ],
+      body: 'Una dirección IP es como la dirección postal de un dispositivo dentro de una red: un número que lo identifica para que otros equipos sepan a dónde enviarle datos. Se escribe como cuatro números separados por puntos, por ejemplo 192.168.1.24.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'IP privada vs. IP pública',
+      illustration: [
+        { who: ICONS.globe, text: 'Privada: 192.168.1.24 (solo tu red de casa)', you: false },
+        { who: ICONS.globe, text: 'Pública: 190.34.12.8 (tu casa vista desde internet)', you: false }
+      ],
+      body: 'Tu router te asigna una IP privada, válida solo dentro de tu red local (casa, oficina) — por eso muchos dispositivos distintos pueden tener una IP que empieza igual, como 192.168.x.x. Hacia afuera, tu proveedor de internet le asigna a tu router una IP pública, única en todo internet, que es la que ven los servidores con los que te conectas.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Rangos reservados para IP privada',
+      illustration: [
+        { who: ICONS.globe, text: '192.168.0.0 – 192.168.255.255 → casa, oficina pequeña', you: false },
+        { who: ICONS.globe, text: '10.0.0.0 – 10.255.255.255 → redes de empresas grandes', you: false }
+      ],
+      body: 'No cualquier número puede ser una IP privada: existen rangos reservados específicamente para eso, que nunca aparecen como IP pública en internet. Los más comunes son 192.168.0.0–192.168.255.255 (típico de routers domésticos) y 10.0.0.0–10.255.255.255 (frecuente en redes corporativas). Si ves una IP dentro de esos rangos, sabes que es privada sin necesidad de preguntar nada más.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: '¿Cuál de estas direcciones es típica de una red doméstica (privada)?',
+      context: 'Piensa en los rangos reservados que acabas de ver.',
+      options: ['192.168.1.10', '190.34.12.8', '8.8.8.8'],
+      correctIdx: 0,
+      explain: '192.168.1.10 cae dentro del rango reservado para redes privadas. Las otras dos son direcciones públicas, visibles desde cualquier parte de internet.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Tu primer comando de red',
+      prompt: 'Escribe hostname -I y presiona Enter',
+      context: '"hostname -I" (con I mayúscula) muestra la IP privada que tiene asignada tu equipo dentro de la red local.',
+      hint: 'Es el mismo comando "hostname" que ya conoces, con la opción -I.',
+      command: 'hostname -I',
+      tabCandidates: ['hostname'],
+      output: '192.168.1.24',
+      successMsg: 'Esa es la IP privada de tu equipo ahora mismo, dentro de tu red local.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'El hostname: el nombre de tu equipo',
+      illustration: [
+        { who: ICONS.linux, text: 'hostname', you: true },
+        { who: ICONS.globe, text: 'linuxpath-pc', you: false }
+      ],
+      body: 'Además de una IP, cada equipo suele tener un "hostname": un nombre legible para las personas, como linuxpath-pc. Mientras que la IP puede cambiar cada vez que te conectas, el hostname suele mantenerse igual, y es más fácil de recordar que una fila de números. "hostname" sin ninguna opción muestra ese nombre; con -I, en cambio, muestra la IP.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Practica',
+      prompt: 'Escribe hostname y presiona Enter (sin -I esta vez)',
+      context: 'Sin ninguna opción, "hostname" muestra el nombre del equipo, no su IP.',
+      hint: 'Es el mismo comando anterior, pero sin la opción -I al final.',
+      command: 'hostname',
+      tabCandidates: ['hostname'],
+      output: 'linuxpath-pc',
+      successMsg: 'Ese es el nombre de tu equipo. Compáralo con la IP que viste antes: uno es para las personas, el otro para la red.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '127.0.0.1: la dirección de "mí mismo"',
+      illustration: [
+        { who: ICONS.linux, text: 'ping 127.0.0.1', you: true },
+        { who: ICONS.globe, text: 'siempre responde tu propio equipo', you: false }
+      ],
+      body: 'Existe una IP especial reservada para un solo propósito: 127.0.0.1, también conocida como "localhost". Sin importar en qué red estés conectado, esa dirección siempre apunta a tu propio equipo — nunca sale a la red real. Se usa muchísimo para probar programas o servicios que corren localmente, antes de exponerlos a otros equipos.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Te conectas a la red de un café, y luego a la de tu casa. ¿A qué equipo apunta 127.0.0.1 (localhost) en cada caso?',
+      context: 'localhost no depende de la red a la que estés conectado.',
+      options: ['Siempre al tuyo propio, sin importar la red', 'Al router de la red en la que estés', 'Al primer equipo que se conectó a esa red'],
+      correctIdx: 0,
+      explain: '127.0.0.1 (localhost) siempre se refiere a tu propio equipo, sin importar a qué red te hayas conectado. Es una dirección que nunca sale hacia la red real.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Qué es un puerto?',
+      illustration: [
+        { who: ICONS.globe, text: '192.168.1.24:80 → servidor web', you: false },
+        { who: ICONS.globe, text: '192.168.1.24:22 → acceso remoto (SSH)', you: false }
+      ],
+      body: 'Si la IP es la dirección del edificio, el puerto es el número de la puerta dentro de él: identifica a qué programa o servicio va dirigida la conexión. Un mismo equipo puede tener varios servicios corriendo a la vez, cada uno escuchando en su propio puerto — por ejemplo, el puerto 80 suele usarse para páginas web, y el 22 para conexiones SSH.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Puertos conocidos que verás seguido',
+      illustration: [
+        { who: ICONS.globe, text: '22 → SSH · 53 → DNS', you: false },
+        { who: ICONS.globe, text: '80 → HTTP · 443 → HTTPS', you: false }
+      ],
+      body: 'Existen miles de puertos posibles, pero un puñado se repite todo el tiempo porque están "reservados por convención" para servicios específicos: 22 para SSH (acceso remoto), 53 para DNS, 80 para páginas web sin cifrar (HTTP) y 443 para páginas web cifradas (HTTPS). Reconocerlos de memoria te va a ahorrar tiempo en las próximas lecciones.'
+    },
+    {
+      type: 'match-pairs',
+      kicker: 'Relaciona cada par',
+      prompt: 'Une cada puerto conocido con el servicio que suele usarlo',
+      context: 'Estos cuatro son los que vas a ver con más frecuencia.',
+      pairs: [
+        { left: '22', right: 'SSH (acceso remoto)' },
+        { left: '53', right: 'DNS (traducción de nombres)' },
+        { left: '80', right: 'HTTP (web sin cifrar)' },
+        { left: '443', right: 'HTTPS (web cifrada)' }
+      ],
+      explain: '22 es SSH, 53 es DNS, 80 es HTTP y 443 es HTTPS. No son reglas obligatorias, pero casi todos los servicios respetan esta convención.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Dos programas de tu equipo necesitan recibir conexiones de red al mismo tiempo. ¿Cómo se diferencian?',
+      context: 'La IP identifica el equipo, pero un equipo puede correr varios servicios de red a la vez.',
+      options: ['Cada uno usa una IP distinta', 'Cada uno escucha en un puerto distinto', 'No es posible, solo uno puede usar la red'],
+      correctIdx: 1,
+      explain: 'La IP identifica al equipo; el puerto identifica a qué programa dentro de ese equipo va dirigida la conexión. Por eso dos servicios pueden convivir en la misma IP si usan puertos distintos.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Qué es el DNS?',
+      illustration: [
+        { who: ICONS.linux, text: 'linuxpath.dev', you: true },
+        { who: ICONS.globe, text: '→ 190.34.12.8', you: false }
+      ],
+      body: 'Nadie quiere memorizar números para visitar una página. El DNS (Domain Name System) es como una agenda de contactos gigante que traduce nombres fáciles de recordar, como linuxpath.dev, a la dirección IP real del servidor que los atiende. Cada vez que escribes una dirección web, tu equipo primero le pregunta al DNS "¿qué IP le corresponde a esto?" antes de conectarse.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Escribes linuxpath.dev en el navegador. ¿Qué pasa primero, antes de que tu equipo se conecte al servidor?',
+      context: 'Los servidores se identifican por IP, no por nombre.',
+      options: ['El navegador adivina la IP', 'El DNS traduce el nombre a una IP', 'Se conecta directo usando el nombre'],
+      correctIdx: 1,
+      explain: 'El DNS traduce linuxpath.dev a su IP real (por ejemplo 190.34.12.8); recién con esa IP tu equipo puede establecer la conexión.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres ver la IP privada de tu equipo dentro de la red local. Ordena las piezas.',
+      context: 'Es el mismo comando "hostname" que ya conoces, con la opción correcta — ojo, la mayúscula importa.',
+      chips: ['hostname', '-i', '-I', 'whoami', 'ip'],
+      correctOrder: ['hostname', '-I'],
+      explain: 'hostname -I (con I mayúscula) muestra la IP privada del equipo. hostname -i en minúscula no es la misma opción: en Linux, las mayúsculas y minúsculas en los comandos y sus opciones importan.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Para cerrar',
+      prompt: 'Repaso rápido',
+      illustration: [
+        { who: ICONS.globe, text: 'IP: la dirección de un equipo · hostname: su nombre', you: false },
+        { who: ICONS.globe, text: 'Puerto: qué servicio recibe la conexión · 127.0.0.1: siempre tú mismo', you: false },
+        { who: ICONS.globe, text: 'DNS: traduce nombres fáciles a direcciones IP', you: false }
+      ],
+      body: 'Con estos conceptos ya tienes la base para entender cómo dos equipos se encuentran en una red: la IP (privada o pública) dice dónde está un equipo, el hostname es su nombre para las personas, el puerto dice a qué servicio va dirigida la conexión, 127.0.0.1 siempre apunta a tu propio equipo, y el DNS te ahorra tener que memorizar números. En las próximas lecciones vas a usar ping, curl y ssh — todos se apoyan en estos mismos conceptos.'
+    }
+  ];
+
+  // ---------- UNIDAD 5 (Redes) · Lección 2: ping y traceroute ----------
+  // Continúa después de conceptosRedLessonSteps: ahora que el usuario ya
+  // sabe qué es una IP, enseña a probar conectividad hacia otro equipo
+  // con ping, interpretar su salida, y a ver la ruta que siguen los
+  // paquetes con traceroute. Comandos simulados con salidas realistas
+  // pero fijas (no dependen de red real).
+  const pingTracerouteLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: '¿Para qué sirve ping?',
+      illustration: [
+        { who: ICONS.linux, text: '¿Estás ahí?', you: true },
+        { who: ICONS.globe, text: '¡Sí! respuesta en 14ms', you: false }
+      ],
+      body: '"ping" envía un pequeño paquete de datos a otro equipo y espera la respuesta, como gritar "¿hay alguien ahí?" y medir cuánto tarda el eco en volver. Sirve para confirmar dos cosas: que el otro equipo está encendido y accesible, y qué tan rápida es la conexión hasta él.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Probar conectividad',
+      prompt: 'Escribe ping -c 4 linuxpath.dev y presiona Enter',
+      context: 'La opción -c 4 le dice a ping que envíe solo 4 paquetes y se detenga, en vez de seguir indefinidamente.',
+      hint: 'El comando que "llama" a otro equipo para comprobar que responde, con la opción para limitar cuántas veces.',
+      command: 'ping -c 4 linuxpath.dev',
+      tabCandidates: ['ping', '-c', '4', 'linuxpath.dev'],
+      output: 'PING linuxpath.dev (190.34.12.8): 56 data bytes\n64 bytes from 190.34.12.8: icmp_seq=0 time=14.2 ms\n64 bytes from 190.34.12.8: icmp_seq=1 time=13.8 ms\n64 bytes from 190.34.12.8: icmp_seq=2 time=15.1 ms\n64 bytes from 190.34.12.8: icmp_seq=3 time=14.0 ms\n\n--- linuxpath.dev ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss',
+      successMsg: 'Los 4 paquetes fueron y volvieron sin perderse (0% packet loss), con un tiempo de ida y vuelta de entre 13 y 15 milisegundos: la conexión está sana.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Leer la salida de ping',
+      illustration: [
+        { who: ICONS.globe, text: 'time=14.2 ms → qué tan rápido responde', you: false },
+        { who: ICONS.globe, text: '0% packet loss → nada se perdió en el camino', you: false }
+      ],
+      body: 'Dos datos importan más que el resto: el tiempo ("time"), que te dice cuántos milisegundos tardó la ida y vuelta — mientras más bajo, mejor — y el porcentaje de paquetes perdidos ("packet loss"). Un 0% de pérdida es lo ideal; si empieza a subir, algo en el camino está fallando.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Ejecutas ping hacia un servidor y ves "50% packet loss" en el resultado. ¿Qué significa?',
+      context: 'packet loss mide qué porcentaje de los paquetes enviados nunca recibieron respuesta.',
+      "options": ["La mitad de los paquetes se perdieron en el camino", "El servidor está funcionando al 50% de su capacidad", "La conexión es el doble de lenta de lo normal"],
+      correctIdx: 0,
+      explain: 'packet loss es el porcentaje de paquetes que se enviaron pero nunca volvieron con respuesta. Un 50% indica una conexión inestable, con la mitad de los paquetes perdiéndose en el camino.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Qué hace traceroute?',
+      illustration: [
+        { who: ICONS.linux, text: '¿Por dónde pasan mis datos?', you: true },
+        { who: ICONS.globe, text: '1 router-casa → 2 isp-gw → 3 destino', you: false }
+      ],
+      body: 'ping te dice SI llegaste, pero no por dónde pasaste. "traceroute" muestra cada "salto" (router intermedio) que atraviesan tus datos antes de llegar al destino final, como un mapa de las paradas del viaje. Sirve para encontrar en qué punto exacto del camino se está frenando o cortándose una conexión lenta.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Ver la ruta de los paquetes',
+      prompt: 'Escribe traceroute linuxpath.dev y presiona Enter',
+      context: '"traceroute" muestra cada router intermedio ("salto") por el que pasan tus datos antes de llegar al destino.',
+      hint: 'El comando que traza ("trace") la ruta ("route") que siguen tus datos hasta el destino.',
+      command: 'traceroute linuxpath.dev',
+      tabCandidates: ['traceroute', 'linuxpath.dev'],
+      output: 'traceroute to linuxpath.dev (190.34.12.8), 30 hops max\n 1  192.168.1.1        1.2 ms\n 2  10.20.0.1           8.4 ms\n 3  200.14.5.33         12.1 ms\n 4  190.34.12.8         14.6 ms',
+      successMsg: 'Cuatro saltos hasta el destino: tu router, la puerta de enlace de tu proveedor, un punto intermedio, y por último el servidor de linuxpath.dev.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Qué es el TTL?',
+      illustration: [
+        { who: ICONS.globe, text: 'ttl=54', you: false },
+        { who: ICONS.linux, text: '¿Por qué no sigue viajando para siempre?', you: true }
+      ],
+      body: 'Cada paquete que envía ping lleva un contador llamado TTL ("Time To Live"), que baja de a uno en cada router que atraviesa. Si llega a cero antes de alcanzar el destino, el paquete se descarta. Existe para que un paquete perdido en un bucle de red no viaje eternamente consumiendo recursos: en algún momento "se le acaba el tiempo" y desaparece.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Diagnosticar un problema',
+      prompt: 'Escribe ping -c 4 servidor-lento.local y presiona Enter',
+      context: 'Esta vez la conexión no está sana: vas a ver cómo se ve un ping con paquetes perdidos.',
+      hint: 'El mismo comando que ya usaste, apuntando a un host distinto.',
+      command: 'ping -c 4 servidor-lento.local',
+      tabCandidates: ['ping', '-c', '4', 'servidor-lento.local'],
+      output: 'PING servidor-lento.local (10.20.0.55): 56 data bytes\n64 bytes from 10.20.0.55: icmp_seq=0 time=210.4 ms\nRequest timeout for icmp_seq=1\n64 bytes from 10.20.0.55: icmp_seq=2 time=198.7 ms\nRequest timeout for icmp_seq=3\n\n--- servidor-lento.local ping statistics ---\n4 packets transmitted, 2 received, 50% packet loss',
+      successMsg: 'Dos cosas están mal aquí: la mitad de los paquetes nunca volvió (50% packet loss) y los que sí volvieron tardaron más de 200ms, muy por encima de los 14ms que viste antes. Esta conexión tiene un problema real.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Cuando un salto no responde',
+      illustration: [
+        { who: ICONS.globe, text: '3  * * *', you: false },
+        { who: ICONS.globe, text: '4  190.34.12.8   16.2 ms', you: false }
+      ],
+      body: 'A veces, en la salida de traceroute vas a ver un salto marcado solo con asteriscos (* * *) en vez de una IP y un tiempo. Eso no siempre significa que la red esté rota ahí: muchos routers intermedios están configurados para no responder a este tipo de sondeos por seguridad, aunque sigan reenviando el tráfico con normalidad. Lo que realmente importa es si el último salto (el destino) responde.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Necesitas saber si un servidor está caído, o si está arriba pero muy lento. ¿Qué comando usas primero?',
+      context: 'Piensa en qué pregunta responde cada comando.',
+      options: ['traceroute, porque muestra más detalle', 'ping, porque confirma si responde y mide la latencia', 'Cualquiera de los dos, dan la misma información'],
+      correctIdx: 1,
+      explain: 'ping es el primer paso natural: con una sola ejecución sabes si el servidor responde y qué tan rápido lo hace. traceroute se usa después, solo si necesitas ver en qué punto exacto del camino se origina un problema.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Para cerrar',
+      prompt: 'Repaso rápido',
+      illustration: [
+        { who: ICONS.globe, text: 'ping: ¿está ahí y qué tan rápido responde?', you: false },
+        { who: ICONS.globe, text: 'traceroute: ¿por dónde pasa el camino hasta él?', you: false }
+      ],
+      body: 'ping confirma que un equipo responde y mide la latencia; traceroute muestra la ruta completa, salto por salto. Usados juntos son las primeras herramientas para diagnosticar cualquier problema de conectividad: primero confirmas si llegas, y si algo anda mal, ves dónde exactamente se corta el camino.'
+    }
+  ];
+
+  // ---------- UNIDAD 5 (Redes) · Lección 3: curl y wget ----------
+  // Introduce las peticiones HTTP desde la terminal. Usa el nuevo tipo
+  // 'match-pairs' para relacionar códigos de estado HTTP con su
+  // significado, algo que se presta mejor a emparejar que a una sola
+  // pregunta de opción múltiple porque son varios pares de datos afines.
+  const curlWgetLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: '¿Qué es curl?',
+      illustration: [
+        { who: ICONS.linux, text: 'curl https://linuxpath.dev/api/status', you: true },
+        { who: ICONS.globe, text: '{"status":"ok"}', you: false }
+      ],
+      body: '"curl" le pide datos a una dirección web directamente desde la terminal, sin necesidad de abrir un navegador. Es la forma más rápida de probar si una página o un servicio responde, y qué responde exactamente.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Tu primera petición',
+      prompt: 'Escribe curl https://linuxpath.dev/api/status y presiona Enter',
+      context: '"curl" seguido de una dirección hace una petición y muestra la respuesta directamente en la terminal.',
+      hint: 'El comando que pide datos a una dirección web, seguido de la dirección completa.',
+      command: 'curl https://linuxpath.dev/api/status',
+      tabCandidates: ['curl', 'https://linuxpath.dev/api/status'],
+      output: '{"status":"ok","uptime":"14d"}',
+      successMsg: 'El servidor respondió con un JSON: así lucen muchas respuestas de APIs modernas.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Qué es un código de estado HTTP?',
+      illustration: [
+        { who: ICONS.globe, text: '200 OK → todo bien', you: false },
+        { who: ICONS.globe, text: '404 Not Found → no existe', you: false }
+      ],
+      body: 'Cada vez que pides algo a un servidor web, este responde con un número de tres cifras llamado código de estado, que resume qué pasó con la petición antes de mostrarte cualquier contenido. 200 significa que todo salió bien; hay muchos otros para distintas situaciones.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Ver el código de estado',
+      prompt: 'Escribe curl -I https://linuxpath.dev y presiona Enter',
+      context: 'La opción -I (mayúscula) pide solo las cabeceras de la respuesta, sin el contenido completo — ahí aparece el código de estado.',
+      hint: 'El mismo comando curl, con la opción para pedir solo cabeceras.',
+      command: 'curl -I https://linuxpath.dev',
+      tabCandidates: ['curl', '-I', 'https://linuxpath.dev'],
+      output: 'HTTP/2 200 \ncontent-type: text/html\ndate: Tue, 15 Sep 2026 10:02:11 GMT',
+      successMsg: '200 en la primera línea: el servidor respondió sin problemas.'
+    },
+    {
+      type: 'match-pairs',
+      kicker: 'Relaciona cada par',
+      prompt: 'Une cada código de estado HTTP con lo que significa',
+      context: 'Estos son los códigos que vas a ver con más frecuencia al trabajar con curl.',
+      pairs: [
+        { left: '200 OK', right: 'La petición funcionó correctamente' },
+        { left: '301', right: 'El recurso se movió a otra dirección' },
+        { left: '404', right: 'El recurso pedido no existe' },
+        { left: '500', right: 'Falló algo del lado del servidor' }
+      ],
+      explain: '200 es éxito, 301 es una redirección permanente, 404 es "no encontrado" y 500 es un error interno del servidor: memorizar estos cuatro te cubre la gran mayoría de los casos del día a día.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: '¿Qué es wget?',
+      illustration: [
+        { who: ICONS.linux, text: 'wget https://linuxpath.dev/logo.png', you: true },
+        { who: ICONS.globe, text: 'logo.png guardado (48 KB)', you: false }
+      ],
+      body: 'Mientras curl está pensado para mostrar la respuesta o trabajar con APIs, "wget" está pensado para descargar y guardar un archivo directamente en tu carpeta actual. Si quieres ver o procesar una respuesta, usas curl; si quieres el archivo completo guardado en disco, usas wget.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Descargar un archivo',
+      prompt: 'Escribe wget https://linuxpath.dev/logo.png y presiona Enter',
+      context: '"wget" descarga el archivo de esa dirección y lo guarda en tu carpeta actual.',
+      hint: 'El comando que descarga y guarda un archivo, seguido de su dirección.',
+      command: 'wget https://linuxpath.dev/logo.png',
+      tabCandidates: ['wget', 'https://linuxpath.dev/logo.png'],
+      output: "Guardando en: 'logo.png'\nlogo.png          100%[===================>]  48.20K  --.-KB/s    in 0.03s\n'logo.png' guardado [49356/49356]",
+      successMsg: 'El archivo ya está en tu carpeta actual, listo para usarse.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Quieres descargar una imagen y guardarla como archivo en tu carpeta actual, sin procesar nada más. ¿Qué comando usas?',
+      context: 'Piensa en qué hace cada comando por defecto: uno muestra, el otro guarda.',
+      options: ['curl, porque es más rápido', 'wget, porque está pensado para guardar archivos', 'Cualquiera de los dos hace exactamente lo mismo'],
+      correctIdx: 1,
+      explain: 'wget está diseñado específicamente para descargar y guardar archivos en disco. curl también puede guardar archivos con la opción -O, pero por defecto muestra la respuesta en pantalla.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Para cerrar',
+      prompt: 'Repaso rápido',
+      illustration: [
+        { who: ICONS.globe, text: 'curl: pide y muestra (o procesa) una respuesta', you: false },
+        { who: ICONS.globe, text: 'wget: descarga y guarda un archivo', you: false }
+      ],
+      body: 'curl y wget cubren las dos necesidades más comunes al trabajar con la web desde la terminal: consultar una API o probar una conexión con curl, y descargar archivos con wget. Ambos son herramientas que vas a usar constantemente en scripts y automatizaciones.'
+    }
+  ];
+
+  // ---------- UNIDAD 5 (Redes) · Lección 4: ssh básico ----------
+  // Cierra el bloque de "conectarte a otra máquina": después de probar
+  // conectividad (ping/traceroute) y pedir datos (curl/wget), esta
+  // lección cubre cómo abrir una sesión de terminal remota con ssh,
+  // autenticarse con contraseña o con llaves (ssh-keygen/ssh-copy-id),
+  // cambiar de puerto, copiar archivos con scp, y cerrar la sesión.
+  const sshBasicoLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Antes de empezar',
+      prompt: '¿Qué es SSH?',
+      illustration: [
+        { who: ICONS.linux, text: 'Necesito trabajar en ese servidor', you: true },
+        { who: ICONS.key, text: 'conexión cifrada establecida', you: false }
+      ],
+      body: 'SSH (Secure Shell) te deja abrir una terminal en otro equipo a través de la red, como si estuvieras sentado justo frente a él. A diferencia de conexiones antiguas como telnet, todo lo que viaja por SSH va cifrado: nadie que intercepte el tráfico puede leer tu contraseña ni lo que escribes.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'La sintaxis básica: usuario@host',
+      illustration: [
+        { who: ICONS.linux, text: 'ssh dev@servidor.linuxpath.dev', you: true },
+        { who: ICONS.key, text: '(ahora estás dentro del servidor remoto)', you: false }
+      ],
+      body: 'El comando ssh siempre sigue el mismo patrón: el nombre de usuario con el que quieres entrar, una arroba, y la dirección del servidor (un dominio o una IP). Si el usuario remoto se llama igual que tu usuario local, puedes omitirlo: ssh usa tu usuario actual por defecto.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Tu primera conexión',
+      prompt: 'Escribe ssh dev@servidor.linuxpath.dev y presiona Enter',
+      context: 'ssh usuario@host abre una sesión remota en ese servidor, pidiéndote autenticarte antes de dejarte entrar.',
+      hint: 'Es ssh, seguido del usuario, una arroba, y la dirección del servidor, todo junto y sin espacios.',
+      command: 'ssh dev@servidor.linuxpath.dev',
+      tabCandidates: ['ssh', 'dev@servidor.linuxpath.dev'],
+      output: 'The authenticity of host \'servidor.linuxpath.dev (190.34.12.8)\' can\'t be established.\nED25519 key fingerprint is SHA256:9fK2xQ...\nAre you sure you want to continue connecting (yes/no)? yes\ndev@servidor.linuxpath.dev\'s password: \nLast login: Mon Sep 14 09:12:03 2026 from 192.168.1.24\ndev@servidor:~$',
+      successMsg: '¡Conectado! Ese último prompt, dev@servidor:~$, ya no es tu máquina: es la terminal del servidor remoto.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un detalle importante',
+      prompt: 'La huella del servidor (fingerprint)',
+      illustration: [
+        { who: ICONS.key, text: 'The authenticity of host ... can\'t be established', you: false },
+        { who: ICONS.lock, text: '¿confías en este servidor?', you: true }
+      ],
+      body: 'La primera vez que te conectas a un servidor nuevo, SSH no tiene forma de saber si de verdad es quien dice ser, así que te muestra su "huella digital" (fingerprint) y te pregunta si confías en ella. Si respondes "yes", SSH la guarda en un archivo llamado known_hosts, y las próximas conexiones ya no vuelven a preguntar.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Te conectas a un servidor al que ya te habías conectado antes, y esta vez SSH muestra una advertencia en mayúsculas de que la huella del servidor cambió, negándose a continuar. ¿Qué deberías hacer?',
+      context: 'SSH guarda la huella del servidor la primera vez justamente para detectar este tipo de cambios inesperados.',
+      options: ['Confirmar igual con "yes": es solo una advertencia menor', 'Detenerte e investigar por qué cambió antes de continuar', 'Desinstalar y reinstalar SSH'],
+      correctIdx: 1,
+      explain: 'Una huella que cambia sin explicación puede significar que alguien está interceptando la conexión. SSH se niega a continuar automáticamente como medida de protección; conviene confirmar por otro medio que el cambio es legítimo (por ejemplo, que el servidor se reinstaló) antes de seguir.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Contraseña vs. llaves: dos formas de autenticarte',
+      illustration: [
+        { who: ICONS.lock, text: 'contraseña: fácil de robar o adivinar', you: false },
+        { who: ICONS.key, text: 'llave pública/privada: mucho más segura', you: false }
+      ],
+      body: 'SSH admite dos formas de autenticarte: con contraseña (la que escribiste recién), o con un par de llaves criptográficas — una privada que nunca sale de tu equipo, y una pública que compartes con el servidor. Las llaves son más seguras porque no viajan por la red ni se pueden adivinar por fuerza bruta, y además te dejan conectarte sin escribir contraseña cada vez.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Crear tu par de llaves',
+      prompt: 'Escribe ssh-keygen -t ed25519 y presiona Enter',
+      context: 'ssh-keygen genera un nuevo par de llaves. -t ed25519 indica el tipo de algoritmo a usar, uno de los más modernos y recomendados hoy en día.',
+      hint: 'Es ssh-keygen, seguido de -t y el nombre del algoritmo.',
+      command: 'ssh-keygen -t ed25519',
+      tabCandidates: ['ssh-keygen', '-t', 'ed25519'],
+      output: 'Generating public/private ed25519 key pair.\nEnter file in which to save the key (/home/dev/.ssh/id_ed25519): \nYour identification has been saved in /home/dev/.ssh/id_ed25519\nYour public key has been saved in /home/dev/.ssh/id_ed25519.pub',
+      successMsg: 'Ya tienes tu par de llaves: una privada (id_ed25519) que nunca compartes, y una pública (id_ed25519.pub) que sí puedes entregar.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Autorizar tu llave en el servidor: ssh-copy-id',
+      illustration: [
+        { who: ICONS.linux, text: 'ssh-copy-id dev@servidor.linuxpath.dev', you: true },
+        { who: ICONS.key, text: 'llave pública añadida al servidor', you: false }
+      ],
+      body: 'Generar las llaves no basta: el servidor necesita conocer tu llave pública para reconocerte. ssh-copy-id hace justamente eso: copia tu llave pública al servidor y la agrega a su lista de llaves autorizadas, en un solo paso.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Copiar tu llave al servidor',
+      prompt: 'Escribe ssh-copy-id dev@servidor.linuxpath.dev y presiona Enter',
+      context: 'ssh-copy-id copia tu llave pública al servidor indicado y la deja lista para futuras conexiones.',
+      hint: 'Es ssh-copy-id, seguido del usuario, una arroba y la dirección del servidor, igual que con ssh.',
+      command: 'ssh-copy-id dev@servidor.linuxpath.dev',
+      tabCandidates: ['ssh-copy-id', 'dev@servidor.linuxpath.dev'],
+      output: '/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s)\nNumber of key(s) added: 1\nNow try logging into the machine, with: "ssh \'dev@servidor.linuxpath.dev\'"',
+      successMsg: 'A partir de ahora, ssh dev@servidor.linuxpath.dev te va a dejar entrar sin pedirte contraseña.'
+    },
+    {
+      type: 'match-pairs',
+      kicker: 'Relaciona cada par',
+      prompt: 'Une cada comando con lo que hace',
+      context: 'Los cuatro comandos que acabas de ver, resumidos en un solo lugar.',
+      pairs: [
+        { left: 'ssh', right: 'Abre una sesión de terminal remota en otro equipo' },
+        { left: 'ssh-keygen', right: 'Genera un nuevo par de llaves pública/privada' },
+        { left: 'ssh-copy-id', right: 'Copia tu llave pública a un servidor remoto' },
+        { left: 'scp', right: 'Copia archivos entre equipos usando SSH' }
+      ],
+      explain: 'ssh conecta, ssh-keygen crea las llaves, ssh-copy-id las autoriza en el servidor, y scp copia archivos aprovechando esa misma conexión cifrada.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Elige la respuesta',
+      prompt: 'Después de usar ssh-copy-id, ¿por qué ya no te pide contraseña al conectarte?',
+      context: 'Piensa en qué comprobó exactamente ssh-copy-id en el paso anterior.',
+      options: ['Porque SSH memorizó tu contraseña', 'Porque el servidor ya reconoce tu llave pública y puede verificar que tienes la privada', 'Porque desactivaste la seguridad del servidor'],
+      correctIdx: 1,
+      explain: 'El servidor guarda tu llave pública; al conectarte, SSH demuestra matemáticamente que tienes la llave privada correspondiente, sin que esta viaje nunca por la red. Eso reemplaza a la contraseña de forma más segura.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Cuando el servidor usa otro puerto: -p',
+      illustration: [
+        { who: ICONS.key, text: 'ssh -p 2222 dev@servidor.linuxpath.dev', you: true }
+      ],
+      body: 'Por defecto, SSH usa el puerto 22. Algunos servidores, por seguridad, corren SSH en otro puerto para reducir los intentos automáticos de acceso de bots. La opción -p (minúscula) le indica a ssh en qué puerto conectarse en vez del 22.'
+    },
+    {
+      type: 'order',
+      kicker: 'Ordena el comando',
+      prompt: 'Quieres conectarte como usuario dev al servidor servidor.linuxpath.dev, que corre SSH en el puerto 2222 en vez del puerto por defecto. Ordena las piezas.',
+      context: 'Necesitas la opción de puerto antes del destino, con el número correcto.',
+      chips: ['-P', 'ssh', '-p', '2222', 'dev@servidor.linuxpath.dev'],
+      correctOrder: ['ssh', '-p', '2222', 'dev@servidor.linuxpath.dev'],
+      explain: 'ssh -p 2222 dev@servidor.linuxpath.dev le dice a ssh que use el puerto 2222 en vez del 22 por defecto. La opción es -p en minúscula: -P mayúscula es una opción distinta.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Un paso más',
+      prompt: 'Copiar archivos con scp',
+      illustration: [
+        { who: ICONS.linux, text: 'scp informe.txt dev@servidor.linuxpath.dev:~/', you: true },
+        { who: ICONS.key, text: 'informe.txt copiado al servidor', you: false }
+      ],
+      body: 'scp (secure copy) usa la misma conexión cifrada de SSH, pero en vez de abrirte una terminal, copia archivos entre tu equipo y el servidor. La sintaxis se parece a cp: origen y luego destino, salvo que el lado remoto lleva usuario@host: delante de la ruta.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Copiar un archivo al servidor',
+      prompt: 'Escribe scp informe.txt dev@servidor.linuxpath.dev:~/ y presiona Enter',
+      context: 'scp copia informe.txt desde tu equipo hacia la carpeta personal (~/) del usuario dev en el servidor.',
+      hint: 'Es scp, el archivo local, y luego usuario@host: seguido de la ruta destino, sin espacio antes de los dos puntos.',
+      command: 'scp informe.txt dev@servidor.linuxpath.dev:~/',
+      tabCandidates: ['scp', 'informe.txt', 'dev@servidor.linuxpath.dev:~/'],
+      output: 'informe.txt                                  100%   12KB   3.1MB/s   00:00',
+      successMsg: '¡Listo! informe.txt ahora vive también en el servidor remoto, copiado de forma cifrada.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Para cerrar',
+      prompt: 'Salir de la sesión remota',
+      illustration: [
+        { who: ICONS.linux, text: 'exit', you: true },
+        { who: ICONS.key, text: '(sesión remota cerrada, de vuelta en tu equipo)', you: false }
+      ],
+      body: 'Cuando termines de trabajar en el servidor remoto, exit — el mismo comando que ya conoces — cierra la sesión SSH y te devuelve a la terminal de tu propio equipo. El prompt vuelve a mostrar tu usuario y tu máquina locales en vez de los del servidor.'
+    },
+    {
+      type: 'concept',
+      kicker: 'Para cerrar',
+      prompt: 'Repaso rápido',
+      illustration: [
+        { who: ICONS.key, text: 'ssh usuario@host abre una terminal remota cifrada', you: false },
+        { who: ICONS.key, text: 'scp copia archivos usando esa misma conexión', you: false }
+      ],
+      body: 'Repasemos: ssh usuario@host abre una sesión de terminal cifrada en otro equipo, autenticándote con contraseña o con un par de llaves (más seguras y sin necesidad de escribir contraseña, gracias a ssh-keygen y ssh-copy-id). -p cambia el puerto si el servidor no usa el 22 por defecto. scp usa esa misma conexión para copiar archivos entre equipos, y exit cierra la sesión devolviéndote a tu terminal local.'
+    }
+  ];
+
+  // ---------- UNIDAD 5 (Redes) · Repaso ----------
+  // Repaso mezclado de las 4 lecciones de la unidad: conceptos de red
+  // (IP, puertos, DNS), ping y traceroute, curl y wget, y ssh básico.
+  // Mismo patrón que los demás repasoXLessonSteps: una intro y luego
+  // preguntas cruzadas entre los cuatro temas, sin agruparlas por
+  // lección, para forzar a recordar todo junto.
+  const repasoRedesLessonSteps = [
+    {
+      type: 'concept',
+      kicker: 'Repaso final',
+      prompt: 'Todo lo que aprendiste en Redes',
+      illustration: [
+        { who: ICONS.globe, text: 'IP · puertos · DNS · ping · traceroute', you: false },
+        { who: ICONS.key, text: 'curl · wget · ssh · scp', you: false }
+      ],
+      body: 'Antes de pasar al siguiente nivel, vamos a repasar mezclado todo lo que ya sabes: qué es una IP, un puerto y el DNS, cómo probar conectividad con ping y traceroute, cómo pedir y descargar datos con curl y wget, y cómo conectarte a otro equipo con ssh. Si te trabas en algo, vuelve a la lección correspondiente.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: '¿Qué identifica exactamente una dirección IP?',
+      context: 'Piensa en qué distingue a un equipo del resto de la red.',
+      options: ['Un equipo dentro de una red', 'Un archivo específico dentro de un equipo', 'El nombre de dominio de una página web'],
+      correctIdx: 0,
+      explain: 'Una IP identifica a un equipo dentro de una red, como su dirección postal. El DNS es el que traduce nombres de dominio a esa IP.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe hostname -I y presiona Enter',
+      context: 'hostname -I (con I mayúscula) muestra la IP privada asignada a tu equipo en la red local.',
+      command: 'hostname -I',
+      tabCandidates: ['hostname', '-I'],
+      output: '192.168.1.24',
+      successMsg: 'Esa IP privada solo es válida dentro de tu red local, no en todo internet.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Dos servicios corren al mismo tiempo en el mismo equipo, con la misma IP. ¿Cómo sabe la red a cuál va dirigida cada conexión?',
+      context: 'La IP identifica al equipo, pero no alcanza para diferenciar servicios dentro de él.',
+      options: ['Cada uno usa una IP distinta', 'Cada uno escucha en un puerto distinto', 'Se turnan para usar la red'],
+      correctIdx: 1,
+      explain: 'El puerto identifica a qué servicio dentro del equipo va dirigida la conexión, como el número de una puerta dentro de un edificio.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribes linuxpath.dev en el navegador. ¿Qué ocurre primero, antes de que tu equipo se conecte al servidor?',
+      context: 'Los servidores se identifican por IP, no por nombre.',
+      options: ['El DNS traduce el nombre a una IP', 'El navegador se conecta directo usando el nombre', 'El servidor te asigna una IP privada'],
+      correctIdx: 0,
+      explain: 'El DNS traduce linuxpath.dev a su IP real; recién con esa IP tu equipo puede establecer la conexión.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe ping -c 4 linuxpath.dev y presiona Enter',
+      context: '-c 4 le dice a ping que envíe solo 4 paquetes y se detenga.',
+      command: 'ping -c 4 linuxpath.dev',
+      tabCandidates: ['ping', '-c', '4', 'linuxpath.dev'],
+      output: 'PING linuxpath.dev (190.34.12.8): 56 data bytes\n64 bytes from 190.34.12.8: icmp_seq=0 time=14.2 ms\n64 bytes from 190.34.12.8: icmp_seq=1 time=13.8 ms\n64 bytes from 190.34.12.8: icmp_seq=2 time=15.1 ms\n64 bytes from 190.34.12.8: icmp_seq=3 time=14.0 ms\n\n--- linuxpath.dev ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss',
+      successMsg: '0% packet loss y tiempos parejos: la conexión está sana.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Un ping muestra "50% packet loss". ¿Qué significa?',
+      context: 'packet loss mide qué porcentaje de paquetes nunca volvió con respuesta.',
+      options: ['La conexión es el doble de lenta de lo normal', 'La mitad de los paquetes se perdieron en el camino', 'El servidor está apagado'],
+      correctIdx: 1,
+      explain: 'packet loss es el porcentaje de paquetes enviados que nunca recibieron respuesta. 50% indica una conexión inestable.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres ver, salto por salto, la ruta que siguen tus datos hasta linuxpath.dev. Ordena las piezas.',
+      context: 'Uno de estos comandos confirma solo si el destino responde; el otro muestra el camino completo.',
+      chips: ['ping', 'traceroute', '-c', 'linuxpath.dev', 'curl'],
+      correctOrder: ['traceroute', 'linuxpath.dev'],
+      explain: 'traceroute linuxpath.dev muestra cada router intermedio hasta el destino. ping solo confirma si el destino responde, sin mostrar la ruta.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Necesitas saber si un servidor está caído o si está arriba pero muy lento. ¿Qué comando usas primero?',
+      context: 'Piensa en qué pregunta responde cada comando con una sola ejecución.',
+      options: ['traceroute, porque muestra más detalle', 'ping, porque confirma si responde y mide la latencia', 'ssh, porque te conecta directo'],
+      correctIdx: 1,
+      explain: 'ping es el primer paso natural: con una sola ejecución sabes si el servidor responde y qué tan rápido lo hace.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe curl https://linuxpath.dev/api/status y presiona Enter',
+      context: 'curl le pide datos a una dirección web y muestra la respuesta directamente en la terminal.',
+      command: 'curl https://linuxpath.dev/api/status',
+      tabCandidates: ['curl', 'https://linuxpath.dev/api/status'],
+      output: '{"status":"ok","uptime":"14d"}',
+      successMsg: 'Así lucen muchas respuestas de APIs modernas: un JSON directo en la terminal.'
+    },
+    {
+      type: 'match-pairs',
+      kicker: 'Repaso mezclado',
+      prompt: 'Une cada código de estado HTTP con lo que significa',
+      context: 'Los cuatro códigos más comunes al trabajar con curl.',
+      pairs: [
+        { left: '200 OK', right: 'La petición funcionó correctamente' },
+        { left: '301', right: 'El recurso se movió a otra dirección' },
+        { left: '404', right: 'El recurso pedido no existe' },
+        { left: '500', right: 'Falló algo del lado del servidor' }
+      ],
+      explain: '200 es éxito, 301 es una redirección, 404 es "no encontrado" y 500 es un error del servidor.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres descargar una imagen y guardarla como archivo en tu carpeta actual, sin procesar nada más. ¿Qué comando usas?',
+      context: 'Piensa en qué hace cada comando por defecto: uno muestra, el otro guarda.',
+      options: ['curl, porque es más rápido', 'wget, porque está pensado para guardar archivos', 'ping, porque confirma que el archivo existe'],
+      correctIdx: 1,
+      explain: 'wget está diseñado específicamente para descargar y guardar archivos en disco.'
+    },
+    {
+      type: 'type-command',
+      kicker: 'Repaso mezclado',
+      prompt: 'Escribe ssh dev@servidor.linuxpath.dev y presiona Enter',
+      context: 'ssh usuario@host abre una sesión de terminal remota, cifrando todo lo que viaja por la red.',
+      command: 'ssh dev@servidor.linuxpath.dev',
+      tabCandidates: ['ssh', 'dev@servidor.linuxpath.dev'],
+      output: 'dev@servidor.linuxpath.dev\'s password: \nLast login: Mon Sep 14 09:12:03 2026 from 192.168.1.24\ndev@servidor:~$',
+      successMsg: 'Ese nuevo prompt, dev@servidor:~$, ya no es tu máquina: es la terminal del servidor remoto.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Te conectas a un servidor al que ya te habías conectado antes, y SSH se niega a continuar porque su huella (fingerprint) cambió. ¿Qué deberías hacer?',
+      context: 'SSH guarda la huella la primera vez justamente para detectar este tipo de cambios.',
+      options: ['Confirmar igual con "yes": es solo una advertencia menor', 'Detenerte e investigar por qué cambió antes de continuar', 'Desinstalar y reinstalar SSH'],
+      correctIdx: 1,
+      explain: 'Una huella que cambia sin explicación puede significar que alguien está interceptando la conexión; conviene investigar antes de continuar.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: '¿Por qué conectarte con llaves (ssh-keygen + ssh-copy-id) es más seguro que con contraseña?',
+      context: 'Piensa en qué información viaja por la red en cada caso.',
+      options: ['Porque la llave privada nunca viaja por la red', 'Porque las llaves son más cortas que una contraseña', 'No hay ninguna diferencia real de seguridad'],
+      correctIdx: 0,
+      explain: 'Con llaves, la privada nunca sale de tu equipo: SSH demuestra que la tienes sin enviarla, algo que una contraseña no puede garantizar.'
+    },
+    {
+      type: 'order',
+      kicker: 'Repaso mezclado',
+      prompt: 'Quieres conectarte como dev a servidor.linuxpath.dev, que corre SSH en el puerto 2222 en vez del puerto por defecto. Ordena las piezas.',
+      context: 'Necesitas la opción de puerto antes del destino, con el número correcto.',
+      chips: ['ssh', '-P', '-p', '2222', 'dev@servidor.linuxpath.dev'],
+      correctOrder: ['ssh', '-p', '2222', 'dev@servidor.linuxpath.dev'],
+      explain: 'ssh -p 2222 dev@servidor.linuxpath.dev usa el puerto 2222 en vez del 22 por defecto. La opción es -p minúscula.'
+    },
+    {
+      type: 'choice',
+      kicker: 'Repaso mezclado',
+      prompt: 'Ya tienes una sesión SSH abierta y quieres copiar un archivo local al servidor, sin abrir una segunda conexión aparte. ¿Qué comando usas?',
+      context: 'Piensa en el comando que reutiliza la misma conexión cifrada de SSH, pero para copiar archivos en vez de abrir una terminal.',
+      options: ['curl', 'scp', 'wget'],
+      correctIdx: 1,
+      explain: 'scp (secure copy) usa la misma conexión cifrada de SSH para copiar archivos entre equipos, con una sintaxis parecida a cp.'
+    }
+  ];
+
+  // ---------- UNIDAD 5 (Redes) · Desafío final ----------
+  // Dos escenarios multi-step-terminal que combinan las 4 lecciones de
+  // la unidad: el primero encadena ping, curl -I, traceroute y wget
+  // para diagnosticar un servidor lento; el segundo encadena
+  // ssh-keygen, ssh-copy-id, ssh y scp para desplegar sin contraseña
+  // en un puerto no estándar, incluida la trampa real de -p vs -P.
+  const desafioRedesLessonSteps = [
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Sin instrucciones, solo la meta',
+      prompt: 'Los usuarios reportan que api.linuxpath.dev "no carga bien". Vas a diagnosticar qué está pasando exactamente, combinando lo que aprendiste sobre conectividad y peticiones HTTP, todo en la misma sesión de terminal.',
+      context: 'No hay pasos sueltos: cada comando te da una pista de qué revisar a continuación.',
+      successMsg: '¡Diagnóstico completo! Con ping, curl, traceroute y wget lograste ubicar el problema del lado del servidor y conseguir el registro de errores, sin que nadie te dijera qué comando usar en cada paso.',
+      steps: [
+        {
+          goal: 'Antes de nada, confirma si api.linuxpath.dev responde y qué tan rápido lo hace.',
+          command: 'ping -c 4 api.linuxpath.dev',
+          output: 'PING api.linuxpath.dev (190.34.12.20): 56 data bytes\n64 bytes from 190.34.12.20: icmp_seq=0 time=420.6 ms\n64 bytes from 190.34.12.20: icmp_seq=1 time=398.2 ms\n64 bytes from 190.34.12.20: icmp_seq=2 time=411.9 ms\n64 bytes from 190.34.12.20: icmp_seq=3 time=405.1 ms\n\n--- api.linuxpath.dev ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss',
+          hint: 'El comando que confirma si un equipo responde y mide cuánto tarda, limitando la cantidad de paquetes con una opción.',
+          tabCandidates: ['ping', '-c', '4', 'api.linuxpath.dev']
+        },
+        {
+          goal: 'El servidor responde, pero con más de 400ms — muy por encima de los ~14ms normales. Revisa el código de estado que entrega su endpoint /status, sin descargar el contenido completo.',
+          command: 'curl -I https://api.linuxpath.dev/status',
+          output: 'HTTP/2 500 \ncontent-type: application/json\ndate: Tue, 15 Sep 2026 10:14:02 GMT',
+          hint: 'El mismo comando que usarías para pedir datos a una dirección web, con la opción que pide solo cabeceras.',
+          tabCandidates: ['curl', '-I', 'https://api.linuxpath.dev/status']
+        },
+        {
+          goal: 'Un 500 significa que el problema es del servidor, no tuyo — pero antes de descartarlo del todo, confirma que la ruta hasta él está sana.',
+          command: 'traceroute api.linuxpath.dev',
+          output: 'traceroute to api.linuxpath.dev (190.34.12.20), 30 hops max\n 1  192.168.1.1        1.1 ms\n 2  10.20.0.1           8.6 ms\n 3  200.14.5.33         12.4 ms\n 4  190.34.12.20        14.9 ms',
+          hint: 'El comando que muestra cada salto (router intermedio) por el que pasan tus datos hasta el destino.',
+          tabCandidates: ['traceroute', 'api.linuxpath.dev']
+        },
+        {
+          goal: 'La ruta llega bien y rápido hasta el servidor: el problema es del servidor mismo, no de la red. Descarga el registro de errores que el equipo de backend dejó disponible para diagnosticarlo.',
+          command: 'wget https://api.linuxpath.dev/errors.log',
+          output: "Guardando en: 'errors.log'\nerrors.log        100%[===================>]  8.40K  --.-KB/s    in 0.01s\n'errors.log' guardado [8600/8600]",
+          hint: 'El comando pensado para descargar y guardar un archivo, no solo mostrarlo en pantalla.',
+          tabCandidates: ['wget', 'https://api.linuxpath.dev/errors.log']
+        }
+      ]
+    },
+    {
+      type: 'multi-step-terminal',
+      kicker: 'Sin instrucciones, solo la meta',
+      prompt: 'Necesitas desplegar un archivo de configuración en deploy.linuxpath.dev, un servidor nuevo para ti que corre SSH en el puerto 2222 en vez del puerto por defecto. Vas a dejarlo listo para conectarte sin contraseña y copiar el archivo, todo en la misma sesión.',
+      context: 'Vas a necesitar generar tus llaves, autorizarlas en el puerto correcto, confirmar el acceso y copiar el archivo — cada comando ajustando el puerto donde corresponda.',
+      successMsg: '¡Despliegue completo! Generaste tus llaves, las autorizaste en el puerto correcto, confirmaste el acceso sin contraseña y copiaste el archivo — combinando ssh-keygen, ssh-copy-id, ssh y scp sin que nadie te dijera los comandos exactos.',
+      steps: [
+        {
+          goal: 'Antes de nada, genera tu propio par de llaves SSH para no depender de contraseña en este servidor.',
+          command: 'ssh-keygen -t ed25519',
+          output: 'Generating public/private ed25519 key pair.\nEnter file in which to save the key (/home/dev/.ssh/id_ed25519): \nYour identification has been saved in /home/dev/.ssh/id_ed25519\nYour public key has been saved in /home/dev/.ssh/id_ed25519.pub',
+          hint: 'El comando que genera un nuevo par de llaves, con la opción que indica el algoritmo a usar.',
+          tabCandidates: ['ssh-keygen', '-t', 'ed25519']
+        },
+        {
+          goal: 'El servidor deploy.linuxpath.dev corre SSH en el puerto 2222. Copia tu llave pública para que te reconozca, indicando ese puerto.',
+          command: 'ssh-copy-id -p 2222 dev@deploy.linuxpath.dev',
+          output: '/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s)\nNumber of key(s) added: 1\nNow try logging into the machine, with: "ssh -p 2222 \'dev@deploy.linuxpath.dev\'"',
+          hint: 'El comando que copia tu llave pública al servidor, con la misma opción de puerto que usarías con ssh.',
+          tabCandidates: ['ssh-copy-id', '-p', '2222', 'dev@deploy.linuxpath.dev']
+        },
+        {
+          goal: 'Confirma que ya puedes entrar sin que te pida contraseña, usando el puerto correcto.',
+          command: 'ssh -p 2222 dev@deploy.linuxpath.dev',
+          output: 'Last login: Mon Sep 14 10:02:11 2026 from 192.168.1.24\ndev@deploy:~$',
+          hint: 'El comando que abre una sesión remota, con la opción -p (minúscula) y el puerto.',
+          tabCandidates: ['ssh', '-p', '2222', 'dev@deploy.linuxpath.dev']
+        },
+        {
+          goal: 'Ya autorizado, copia config.yml a la carpeta personal del servidor. Ojo: scp usa una opción de puerto distinta a la de ssh.',
+          command: 'scp -P 2222 config.yml dev@deploy.linuxpath.dev:~/',
+          output: 'config.yml                                    100%   4KB   2.1MB/s   00:00',
+          hint: 'El comando que copia archivos usando la conexión de SSH — su opción de puerto es -P en mayúscula, a diferencia de ssh que usa -p en minúscula.',
+          tabCandidates: ['scp', '-P', '2222', 'config.yml', 'dev@deploy.linuxpath.dev:~/']
+        }
+      ]
+    }
+  ];
+
   const unitData = {
     1: {
       title: 'Fundamentos', icon: 'linux', subtitle: 'Unidad 1 · Nivel 1',
@@ -6040,12 +6922,12 @@
     5: {
       title: 'Redes', icon: 'globe', subtitle: 'Unidad 5 · Nivel 5',
       lessons: [
-        { title: 'Conceptos de red', sub: 'IP, puertos, DNS básico', status: 'active', icon: 'globe' },
-        { title: 'ping y traceroute', sub: 'probar conectividad', status: 'active', icon: 'signal' },
-        { title: 'curl y wget', sub: 'peticiones desde la terminal', status: 'active', icon: 'download' },
-        { title: 'ssh básico', sub: 'conectarte a otra máquina', status: 'active', icon: 'key' },
-        { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain' },
-        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true },
+        { title: 'Conceptos de red', sub: 'IP, puertos, DNS básico', status: 'active', icon: 'globe', exercises: conceptosRedLessonSteps },
+        { title: 'ping y traceroute', sub: 'probar conectividad', status: 'active', icon: 'signal', exercises: pingTracerouteLessonSteps },
+        { title: 'curl y wget', sub: 'peticiones desde la terminal', status: 'active', icon: 'download', exercises: curlWgetLessonSteps },
+        { title: 'ssh básico', sub: 'conectarte a otra máquina', status: 'active', icon: 'key', exercises: sshBasicoLessonSteps },
+        { title: 'Repaso', sub: 'Pon todo en práctica', status: 'active', icon: 'brain', exercises: repasoRedesLessonSteps },
+        { title: 'Desafío final', sub: 'Resuélvelo por tu cuenta', status: 'active', icon: 'trophy', final: true, intro: 'Sin pistas paso a paso: combina conceptos de red, ping y traceroute, curl y wget, y ssh para resolver dos situaciones reales de principio a fin.', exercises: desafioRedesLessonSteps },
       ]
     }
   };
@@ -6899,7 +7781,7 @@
         if (e.key !== 'Enter') return;
         const value = input.value.trim().toLowerCase();
         const output = document.getElementById('type-command-output');
-        if (value === ex.command) {
+        if (value === ex.command.toLowerCase()) {
           output.classList.add('success');
           output.textContent = ex.output + '\n' + ex.successMsg;
           input.disabled = true;
@@ -6957,6 +7839,8 @@
       renderBuildPermission(ex);
     } else if (ex.type === 'predict-output') {
       renderPredictOutput(ex);
+    } else if (ex.type === 'match-pairs') {
+      renderMatchPairs(ex);
     } else if (ex.type === 'autocomplete-command') {
       body.innerHTML = `
         <div class="exercise-kicker">${ex.kicker}</div>
@@ -7188,7 +8072,7 @@
       }
       if (e.key !== 'Enter') return;
       const value = input.value.trim().toLowerCase();
-      const validCommands = step.acceptedCommands || [step.command];
+      const validCommands = (step.acceptedCommands || [step.command]).map(c => c.toLowerCase());
 
       if (validCommands.includes(value)) {
         output.classList.add('success');
@@ -7382,6 +8266,131 @@
     };
   }
 
+  // ---------- MATCH-PAIRS: relacionar tarjetas de dos columnas ----------
+  // A diferencia de 'choice' u 'order', aquí hay varios pares correctos
+  // a la vez, no una sola respuesta. ex.pairs es un array de { left, right }
+  // (por ejemplo, una flag de curl y su significado). Se renderizan dos
+  // columnas mezcladas al azar por separado, así que la posición no
+  // delata la pareja. El usuario toca una tarjeta izquierda y luego una
+  // derecha; si coinciden, ambas quedan fijas en verde (matched); si no,
+  // parpadean en rojo un instante y vuelven a quedar libres. La lección
+  // se da por superada (showFeedback con correct=true) recién cuando
+  // todos los pares quedaron resueltos; los intentos fallidos no restan
+  // corazones aquí (el costo ya es el reintento en sí, como en un juego
+  // de memoria), a diferencia de 'choice' donde una respuesta incorrecta
+  // sí los descuenta.
+  let mpPairs = [];
+  let mpSelectedLeft = null;
+  let mpSelectedRight = null;
+  let mpMatchedCount = 0;
+  let mpLocked = false;
+
+  function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function renderMatchPairs(ex) {
+    mpPairs = ex.pairs;
+    mpSelectedLeft = null;
+    mpSelectedRight = null;
+    mpMatchedCount = 0;
+    mpLocked = false;
+
+    const leftItems = shuffleArray(mpPairs.map((p, i) => ({ text: p.left, pairIdx: i })));
+    const rightItems = shuffleArray(mpPairs.map((p, i) => ({ text: p.right, pairIdx: i })));
+
+    const body = document.getElementById('lesson-body');
+    body.innerHTML = `
+      <div class="exercise-kicker">${ex.kicker}</div>
+      <div class="exercise-prompt">${ex.prompt}</div>
+      <div class="exercise-context">${ex.context}</div>
+      <div class="match-progress"><strong id="match-progress-num">0</strong> / ${mpPairs.length} pares encontrados</div>
+      <div class="match-grid">
+        <div class="match-col" id="match-col-left"></div>
+        <div class="match-col" id="match-col-right"></div>
+      </div>
+    `;
+
+    const leftCol = document.getElementById('match-col-left');
+    const rightCol = document.getElementById('match-col-right');
+
+    leftItems.forEach(item => {
+      const card = document.createElement('button');
+      card.className = 'match-card left';
+      card.textContent = item.text;
+      card.dataset.pairIdx = item.pairIdx;
+      card.onclick = () => mpSelectLeft(card, item.pairIdx);
+      leftCol.appendChild(card);
+    });
+
+    rightItems.forEach(item => {
+      const card = document.createElement('button');
+      card.className = 'match-card right';
+      card.textContent = item.text;
+      card.dataset.pairIdx = item.pairIdx;
+      card.onclick = () => mpSelectRight(card, item.pairIdx);
+      rightCol.appendChild(card);
+    });
+  }
+
+  function mpSelectLeft(card, pairIdx) {
+    if (mpLocked || card.classList.contains('matched')) return;
+    document.querySelectorAll('.match-card.left').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    mpSelectedLeft = { card, pairIdx };
+    mpTryMatch();
+  }
+
+  function mpSelectRight(card, pairIdx) {
+    if (mpLocked || card.classList.contains('matched')) return;
+    document.querySelectorAll('.match-card.right').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    mpSelectedRight = { card, pairIdx };
+    mpTryMatch();
+  }
+
+  function mpTryMatch() {
+    if (!mpSelectedLeft || !mpSelectedRight) return;
+    mpLocked = true;
+
+    const isMatch = mpSelectedLeft.pairIdx === mpSelectedRight.pairIdx;
+
+    if (isMatch) {
+      mpSelectedLeft.card.classList.remove('selected');
+      mpSelectedRight.card.classList.remove('selected');
+      mpSelectedLeft.card.classList.add('matched');
+      mpSelectedRight.card.classList.add('matched');
+      mpMatchedCount++;
+      document.getElementById('match-progress-num').textContent = mpMatchedCount;
+
+      const doneLeft = mpSelectedLeft;
+      const doneRight = mpSelectedRight;
+      mpSelectedLeft = null;
+      mpSelectedRight = null;
+      mpLocked = false;
+
+      if (mpMatchedCount >= mpPairs.length) {
+        const ex = getCurrentExercises()[state.exerciseIdx];
+        setTimeout(() => showFeedback(true, ex.explain), 300);
+      }
+    } else {
+      mpSelectedLeft.card.classList.add('wrong');
+      mpSelectedRight.card.classList.add('wrong');
+      setTimeout(() => {
+        mpSelectedLeft.card.classList.remove('selected', 'wrong');
+        mpSelectedRight.card.classList.remove('selected', 'wrong');
+        mpSelectedLeft = null;
+        mpSelectedRight = null;
+        mpLocked = false;
+      }, 550);
+    }
+  }
+
   function selectChoice(idx, btn) {
     document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
@@ -7496,11 +8505,64 @@
     el.classList.add('pulse');
   }
 
+  // ---------- RACHA (STREAK) ----------
+  // Se basa en la fecha local del dispositivo (YYYY-MM-DD), no en
+  // timestamps exactos, para que "un día" se corresponda con el
+  // calendario del usuario y no con bloques de 24h desde la última vez.
+  function todayDateStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function daysBetween(dateStrA, dateStrB) {
+    const a = new Date(dateStrA + 'T00:00:00');
+    const b = new Date(dateStrB + 'T00:00:00');
+    return Math.round((b - a) / 86400000);
+  }
+
+  // Se llama cada vez que el usuario completa una lección. Devuelve
+  // true si la racha cambió (para poder mostrar feedback visual).
+  //  - Primera actividad registrada: racha arranca en 1.
+  //  - Ya hubo actividad hoy: no se toca (una lección extra el mismo
+  //    día no suma racha dos veces).
+  //  - Última actividad fue ayer: racha +1 (el usuario mantuvo la racha).
+  //  - Última actividad fue hace 2+ días: la racha se rompió, vuelve a 1.
+  function updateStreakOnActivity() {
+    const today = todayDateStr();
+
+    if (state.lastActivityDate === today) {
+      return false; // ya contaba como día activo
+    }
+
+    if (state.lastActivityDate === null) {
+      state.streak = 1;
+    } else {
+      const gap = daysBetween(state.lastActivityDate, today);
+      if (gap === 1) {
+        state.streak += 1;
+      } else {
+        state.streak = 1;
+      }
+    }
+
+    state.lastActivityDate = today;
+    return true;
+  }
+
   function finishLesson() {
     state.xp += state.exerciseXpEarned;
     const xpEl = document.getElementById('xp-count');
     xpEl.textContent = state.xp;
     pulseStat(xpEl);
+
+    const streakChanged = updateStreakOnActivity();
+    const streakEl = document.getElementById('streak-count');
+    streakEl.textContent = state.streak;
+    if (streakChanged) pulseStat(streakEl);
+
     document.getElementById('reward-xp').textContent = '+' + state.exerciseXpEarned;
     document.getElementById('reward-streak').textContent = state.streak;
 
@@ -7540,78 +8602,174 @@
   }
 
   // ---------- PERSISTENCE ----------
+  // El progreso vive en dos sitios:
+  //  - localStorage: rápido, siempre disponible, sirve de caché/respaldo
+  //    si no hay red o el usuario no inició sesión.
+  //  - Supabase (tabla user_progress): fuente de verdad entre dispositivos.
+  //    Al cargar la app se prioriza lo que haya en la nube; al guardar,
+  //    se escribe en ambos.
   const STORAGE_KEY = 'linuxpath-progress-v1';
 
-  function saveProgress() {
-    try {
-      const payload = {
-        xp: state.xp,
-        streak: state.streak,
-        hearts: state.hearts,
-        levels: levels.map(l => ({ id: l.id, status: l.status })),
-        lessons: Object.fromEntries(
-          Object.entries(unitData).map(([unitId, u]) => [
-            unitId,
-            u.lessons.map(l => l.status)
-          ])
-        )
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch (e) {
-      // localStorage no disponible (modo privado, cuota, etc). Continuamos sin persistir.
+  function buildProgressPayload() {
+    return {
+      xp: state.xp,
+      streak: state.streak,
+      hearts: state.hearts,
+      lastActivityDate: state.lastActivityDate,
+      levels: levels.map(l => ({ id: l.id, status: l.status })),
+      lessons: Object.fromEntries(
+        Object.entries(unitData).map(([unitId, u]) => [
+          unitId,
+          u.lessons.map(l => l.status)
+        ])
+      )
+    };
+  }
+
+  function applyProgressPayload(saved) {
+    if (!saved) return;
+    if (typeof saved.xp === 'number') state.xp = saved.xp;
+    if (typeof saved.streak === 'number') state.streak = saved.streak;
+    if (typeof saved.hearts === 'number') state.hearts = saved.hearts;
+    if (typeof saved.lastActivityDate === 'string') state.lastActivityDate = saved.lastActivityDate;
+
+    if (Array.isArray(saved.levels)) {
+      saved.levels.forEach(sl => {
+        const level = levels.find(l => l.id === sl.id);
+        if (level) level.status = sl.status;
+      });
+    }
+
+    if (saved.lessons) {
+      Object.entries(saved.lessons).forEach(([unitId, statuses]) => {
+        const u = unitData[unitId];
+        if (!u) return;
+        statuses.forEach((status, idx) => {
+          if (u.lessons[idx]) {
+            u.lessons[idx].status = status;
+          }
+        });
+      });
     }
   }
 
-  function loadProgress() {
+  // Debounce simple para no disparar una escritura a Supabase por cada
+  // tecla/click: se agrupan ráfagas de saveProgress() en una sola llamada
+  // de red, ~600ms después del último cambio.
+  let cloudSaveTimer = null;
+
+  function saveProgress() {
+    const payload = buildProgressPayload();
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      // localStorage no disponible (modo privado, cuota, etc). Continuamos sin persistir localmente.
+    }
+
+    if (typeof window.__lp_saveCloudProgress !== 'function') return;
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(() => {
+      window.__lp_saveCloudProgress(payload).catch(() => {
+        // Sin red o error de Supabase: el progreso ya quedó en localStorage,
+        // se reintentará en el próximo saveProgress().
+      });
+    }, 600);
+  }
+
+  function loadLocalProgress() {
     let raw;
     try {
       raw = localStorage.getItem(STORAGE_KEY);
     } catch (e) {
-      return;
+      return null;
     }
-    if (!raw) return;
+    if (!raw) return null;
     try {
-      const saved = JSON.parse(raw);
-      if (typeof saved.xp === 'number') state.xp = saved.xp;
-      if (typeof saved.streak === 'number') state.streak = saved.streak;
-      if (typeof saved.hearts === 'number') state.hearts = saved.hearts;
-
-      if (Array.isArray(saved.levels)) {
-        saved.levels.forEach(sl => {
-          const level = levels.find(l => l.id === sl.id);
-          if (level) level.status = sl.status;
-        });
-      }
-
-      if (saved.lessons) {
-        Object.entries(saved.lessons).forEach(([unitId, statuses]) => {
-          const u = unitData[unitId];
-          if (!u) return;
-          statuses.forEach((status, idx) => {
-            if (u.lessons[idx]) {
-              u.lessons[idx].status = status;
-            }
-          });
-        });
-      }
+      return JSON.parse(raw);
     } catch (e) {
       // JSON corrupto o formato inesperado: ignoramos y arrancamos limpio.
+      return null;
+    }
+  }
+
+  // El <script type="module"> del <head> (donde viven las funciones de
+  // Supabase) carga de forma asíncrona, así que puede no estar listo
+  // todavía cuando este <script> clásico corre. Esta promesa resuelve
+  // en cuanto window.__lp_cloudReady quede en true (ver el module de
+  // arriba), con un timeout de seguridad por si algo falla al cargar.
+  function waitForCloudReady(timeoutMs) {
+    if (window.__lp_cloudReady) return Promise.resolve();
+    return new Promise(resolve => {
+      const timer = setTimeout(resolve, timeoutMs);
+      window.__lp_onCloudReady = () => { clearTimeout(timer); resolve(); };
+    });
+  }
+
+  // Carga el progreso al iniciar: intenta primero la nube (para que el
+  // progreso viaje entre dispositivos); si no hay sesión, no hay fila en
+  // Supabase todavía (usuario nuevo) o falla la red, cae a localStorage.
+  // Si la nube no tenía nada pero sí había progreso local (primera vez
+  // que este usuario usa la nube desde este dispositivo), ese progreso
+  // local se sube para no perderlo.
+  async function loadProgress() {
+    const local = loadLocalProgress();
+
+    await waitForCloudReady(3000);
+
+    let cloud = null;
+    if (typeof window.__lp_loadCloudProgress === 'function') {
+      try {
+        cloud = await window.__lp_loadCloudProgress();
+      } catch (e) {
+        cloud = null;
+      }
+    }
+
+    if (cloud) {
+      applyProgressPayload(cloud);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud)); } catch (e) {}
+    } else if (local) {
+      applyProgressPayload(local);
+      if (typeof window.__lp_saveCloudProgress === 'function') {
+        window.__lp_saveCloudProgress(local).catch(() => {});
+      }
     }
   }
 
   function resetProgress() {
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    if (typeof window.__lp_saveCloudProgress === 'function') {
+      window.__lp_saveCloudProgress(buildProgressPayload()).catch(() => {});
+    }
     location.reload();
   }
 
+  // Si el usuario no abre la app durante 2+ días, su racha ya estaba
+  // rota antes de completar ninguna lección nueva: sin esto, el número
+  // en el topbar seguiría mostrando la racha vieja hasta la próxima
+  // lección, dando una falsa sensación de que seguía viva. Se llama una
+  // sola vez al cargar la app, sin tocar lastActivityDate (eso solo lo
+  // actualiza updateStreakOnActivity(), al completar una lección).
+  function checkStreakBrokenOnLoad() {
+    if (!state.lastActivityDate || state.streak === 0) return;
+    const gap = daysBetween(state.lastActivityDate, todayDateStr());
+    if (gap >= 2) {
+      state.streak = 0;
+      saveProgress();
+    }
+  }
+
   // ---------- INIT ----------
-  loadProgress();
-  loadPathStyle();
-  document.getElementById('streak-count').textContent = state.streak;
-  document.getElementById('xp-count').textContent = state.xp;
-  document.getElementById('hearts-count').textContent = state.hearts;
-  updatePathStyleToggleUI();
-  renderMap();
+  loadProgress().finally(() => {
+    checkStreakBrokenOnLoad();
+    loadPathStyle();
+    document.getElementById('streak-count').textContent = state.streak;
+    document.getElementById('xp-count').textContent = state.xp;
+    document.getElementById('hearts-count').textContent = state.hearts;
+    updatePathStyleToggleUI();
+    renderMap();
+  });
 </script>
 
 </body>

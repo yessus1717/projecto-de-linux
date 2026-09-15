@@ -32,3 +32,44 @@ export async function signOut() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
 }
+
+// ---------- PROGRESO EN LA NUBE (tabla user_progress) ----------
+// Guarda el progreso del usuario logueado en Supabase, para que esté
+// disponible al entrar desde otro dispositivo. `data` es cualquier
+// objeto serializable (xp, racha, lecciones completadas, etc).
+// Requiere la tabla user_progress creada con RLS (ver
+// supabase_user_progress.sql). Devuelve true si se guardó bien.
+export async function saveCloudProgress(data) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return false;
+
+  const { error } = await supabase
+    .from('user_progress')
+    .upsert({ user_id: session.user.id, data }, { onConflict: 'user_id' });
+
+  if (error) {
+    console.error('saveCloudProgress error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+// Lee el progreso guardado en Supabase para el usuario logueado.
+// Devuelve el objeto `data` guardado, o null si no hay sesión, no hay
+// fila todavía (usuario nuevo) o hubo un error.
+export async function loadCloudProgress() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const { data: row, error } = await supabase
+    .from('user_progress')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('loadCloudProgress error:', error.message);
+    return null;
+  }
+  return row ? row.data : null;
+}
